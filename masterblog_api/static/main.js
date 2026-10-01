@@ -27,8 +27,11 @@ function loadPosts() {
             data.forEach(post => {
                 const postDiv = document.createElement('div');
                 postDiv.className = 'post';
-                postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>
-                <button onclick="deletePost(${post.id})">Delete</button>`;
+                author_name = post.author ? post.author : "n.n.";
+                postDiv.innerHTML = `<h2>${author_name}: ${post.title}</h2><p>${post.content}</p>
+                <button onclick="deletePost(${post.id})">Delete</button>
+                <button onclick="editPost(${post.id})">Edit</button>
+                `;
                 postContainer.appendChild(postDiv);
             });
         })
@@ -39,6 +42,7 @@ function loadPosts() {
 function addPost() {
     // Retrieve the values from the input fields
     var baseUrl = document.getElementById('api-base-url').value;
+    var postAuthor = document.getElementById('author').value;
     var postTitle = document.getElementById('post-title').value;
     var postContent = document.getElementById('post-content').value;
 
@@ -46,7 +50,7 @@ function addPost() {
     fetch(baseUrl + '/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: postTitle, content: postContent })
+        body: JSON.stringify({ author: postAuthor, title: postTitle, content: postContent })
     })
         .then(response => response.json())  // Parse the JSON data from the response
         .then(post => {

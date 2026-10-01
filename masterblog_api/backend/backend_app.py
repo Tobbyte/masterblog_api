@@ -69,11 +69,13 @@ class MasterblogApi(Masterblog):
                 or not isinstance(post_data, dict)
                 or not post_data.get("title", "").strip()
                 or not post_data.get("content", "").strip()
+                or not post_data.get("author", "").strip()
             ):
                 return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
             new_post = self._add_post(
                 {
+                    "author": post_data["author"],
                     "title": post_data["title"],
                     "content": post_data["content"],
                 },

@@ -1,5 +1,5 @@
 [project]
-name = "best_buy_zwei"
+name = "masterblog_api"
 version = "0.1.0"
 requires-python = ">=3.11"
 
@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["best_buy_zwei*"]
+include = ["masterblog_api*"]
 
 [tool.pytest.ini_options]
 addopts = "-v"

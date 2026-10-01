@@ -1,1 +1,3 @@
 werkzeug
+flask
+flask_cors

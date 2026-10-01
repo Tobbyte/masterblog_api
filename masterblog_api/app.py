@@ -37,7 +37,7 @@ class Masterblog:
 
         Sets routes, loads initial data.
         """
-        self.app = Flask(__name__)
+        self.app = Flask(__name__, template_folder="frontend/templates")
 
         self.blog_store = BlogStore()
 
@@ -168,7 +168,7 @@ class Masterblog:
         """Render the index page with blog posts."""
         posts = self.blog_store.load()
         return render_template(
-            "index.html",
+            "index_ssr.html",
             posts=posts,  # refresh
             uuid=self._get_user_uid(),
             blogtitle="Mein Blog",

@@ -6,6 +6,7 @@ from werkzeug import Response
 
 from masterblog_api.app import Masterblog
 from masterblog_api.backend.backend_config import (
+    API_DEFAULT_PAGE_SIZE,
     API_DELETE_SUCCESS,
     API_ERR_BAD_REQUEST_DATA,
     API_ERR_INVALID_POST_ID,
@@ -105,7 +106,11 @@ class MasterblogApi(Masterblog):
                 reverse=reverse,
             )
 
-        return jsonify(all_posts), 200
+        pagination = self._paginate_posts(all_posts)
+        if pagination is None:
+            return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
+
+        return jsonify(pagination), 200
 
     def delete_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
         """Delete a blog post by ID.
@@ -226,7 +231,37 @@ class MasterblogApi(Masterblog):
             content_query,
             match_either=match_either,  # pyright: ignore[reportArgumentType]
         )
-        return jsonify(matching_posts), 200
+        pagination = self._paginate_posts(matching_posts)
+        if pagination is None:
+            return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
+
+        return jsonify(pagination), 200
+
+    @staticmethod
+    def _paginate_posts(posts: list[dict]) -> dict | None:
+        """Return one page of posts with pagination metadata."""
+        try:
+            page = int(request.args.get("page", "1"))
+            per_page = int(
+                request.args.get("per_page", str(API_DEFAULT_PAGE_SIZE)),
+            )
+        except ValueError:
+            return None
+
+        if page < 1 or per_page < 1:
+            return None
+
+        total = len(posts)
+        total_pages = (total + per_page - 1) // per_page
+        start = (page - 1) * per_page
+
+        return {
+            "posts": posts[start : start + per_page],
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": total_pages,
+        }
 
     def _search_posts(
         self,

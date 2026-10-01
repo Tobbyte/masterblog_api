@@ -1,3 +1,11 @@
+/* 
+Some changes made by ai. Following queries were used:
+1: make the #sym:postDiv in a propper way with nested elements to make them contenteditable
+when button "editPost" is clicked. when in edit mode, add button "save" which umdates
+the post via the existing put route.
+
+
+*/
 // Function that runs once the window is fully loaded
 window.onload = function () {
     // Attempt to retrieve the API base URL from the local storage

@@ -213,13 +213,14 @@ class Masterblog:
 
     ### routes logic ###
 
-    def _add_post(self, new_post: dict) -> None:
+    def _add_post(self, new_post: dict) -> dict:
         """Add a new blog post."""
         new_id = self._get_uid()
         new_post["id"] = new_id
         posts_copy = deepcopy(self.blog_store.load())
         posts_copy.append(new_post)
         self.blog_store.save(posts_copy)
+        return new_post
 
     def _del_post(self, post_id: int) -> None:
         """Delete a blog post by its ID."""

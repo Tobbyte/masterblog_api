@@ -6,6 +6,7 @@ the post via the existing put route.
 2: instead of this cumbersome inline building, extend index_csr.html with proper post
 container thats populated and repeated.
 3: see pagination in backend_app.py and add appropriate pagination button to html and use in main.js
+4: see like_post route in backend_app.py and implement functionality and style like in intex_ssr.html
 */
 let currentPage = 1;
 
@@ -34,7 +35,9 @@ function loadPosts(page = 1) {
     localStorage.setItem('apiBaseUrl', baseUrl);
 
     // Use the Fetch API to send a GET request to the /posts endpoint
-    fetch(`${baseUrl}/posts?page=${page}`)
+    fetch(`${baseUrl}/posts?page=${page}`, {
+        credentials: 'include'
+    })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Unable to load posts (${response.status})`);
@@ -92,7 +95,39 @@ function createPostElement(post) {
 
     const saveButton = postDiv.querySelector('.save-button');
     saveButton.addEventListener('click', () => savePost(post.id));
+
+    const likeButton = postDiv.querySelector('.like-button');
+    const likeCount = postDiv.querySelector('.like-count');
+    likeCount.textContent = Array.isArray(post.liked_by)
+        ? post.liked_by.length
+        : 0;
+    likeButton.setAttribute('aria-pressed', 'false');
+    likeButton.addEventListener('click', () => likePost(post.id));
     return postDiv;
+}
+
+function likePost(postId) {
+    const baseUrl = document.getElementById('api-base-url').value;
+
+    fetch(`${baseUrl}/posts/${postId}/like`, {
+        method: 'POST',
+        credentials: 'include'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Unable to update like (${response.status})`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const postDiv = document.querySelector(`[data-post-id="${postId}"]`);
+            const likeButton = postDiv.querySelector('.like-button');
+            const likeCount = postDiv.querySelector('.like-count');
+            likeButton.textContent = data.liked ? '💔' : '❤️';
+            likeButton.setAttribute('aria-pressed', data.liked);
+            likeCount.textContent = data.like_count;
+        })
+        .catch(error => console.error('Error:', error));
 }
 
 function editPost(postId) {

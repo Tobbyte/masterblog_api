@@ -2,13 +2,14 @@
 
 import json
 
-from config import (
+from werkzeug.exceptions import InternalServerError
+
+from masterblog_api.config import (
     DB_FILE_PATH,
     ERR_DB_CORRUPT,
     ERR_SAVE_DATA_FAILED,
     UID_FILE_PATH,
 )
-from werkzeug.exceptions import InternalServerError
 
 
 class BlogStore:

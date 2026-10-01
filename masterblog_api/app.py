@@ -7,12 +7,6 @@ import uuid
 from copy import deepcopy
 from typing import Any
 
-from blog_store import BlogStore
-from config import (
-    ERR_NO_POST_UID,
-    ERR_SAVE_POST_UID,
-    UID_FILE_PATH,
-)
 from flask import (
     Flask,
     abort,
@@ -24,6 +18,13 @@ from flask import (
 )
 from werkzeug import Response
 from werkzeug.exceptions import InternalServerError
+
+from masterblog_api.blog_store import BlogStore
+from masterblog_api.config import (
+    ERR_NO_POST_UID,
+    ERR_SAVE_POST_UID,
+    UID_FILE_PATH,
+)
 
 
 class Masterblog:

@@ -59,6 +59,6 @@ class BlogStore:
         """Save blog posts data."""
         try:
             with DB_FILE_PATH.open("w", encoding="utf-8") as f:
-                f.write(json.dumps(blog_posts))
+                f.write(json.dumps(blog_posts, indent=4, ensure_ascii=False))
         except OSError as e:
             raise InternalServerError(ERR_SAVE_DATA_FAILED) from e

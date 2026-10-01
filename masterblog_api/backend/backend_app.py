@@ -34,13 +34,13 @@ class MasterblogApi(Masterblog):
         )
 
         self.app.add_url_rule(
-            "/api/posts/<id>",
+            "/api/posts/<int:id>",
             view_func=self.delete_post_api,
             methods=["DElETE"],
         )
 
         self.app.add_url_rule(
-            "/api/posts/<id>",
+            "/api/posts/<int:id>",
             view_func=self.update_post_api,
             methods=["PUT"],
         )
@@ -105,15 +105,15 @@ class MasterblogApi(Masterblog):
 
         return jsonify(all_posts), 200
 
-    def delete_post_api(self, post_id: str) -> tuple[Response, int]:
+    def delete_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
         """Delete a blog post by ID.
 
         Returns the result as JSON.
         """
         try:
-            self._delete_post(int(post_id))
+            self._delete_post(id)
             return jsonify({
-                "message": API_DELETE_SUCCESS.format(id=post_id),
+                "message": API_DELETE_SUCCESS.format(id=id),
             }), 200
         except ValueError:
             return jsonify({"error": API_ERR_INVALID_POST_ID}), 400
@@ -126,7 +126,7 @@ class MasterblogApi(Masterblog):
 
         super()._del_post(post_id)
 
-    def update_post_api(self, post_id: str) -> tuple[Response, int]:
+    def update_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
         """Update a blog post by ID.
 
         Returns the result as JSON.
@@ -145,15 +145,14 @@ class MasterblogApi(Masterblog):
                 return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
             try:
-                post_id_int = int(post_id)
-                old_post = self._fetch_post_by_id_with_error(post_id_int)
+                old_post = self._fetch_post_by_id_with_error(id)
                 updated_post = self._update_post(
-                    post_id_int,
+                    id,
                     old_post,
                     raw_post_data,
                 )
                 return jsonify({
-                    "id": post_id_int,
+                    "id": id,
                     "title": updated_post["title"],
                     "content": updated_post["content"],
                 }), 200

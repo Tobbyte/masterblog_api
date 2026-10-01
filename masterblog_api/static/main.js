@@ -5,8 +5,10 @@ when button "editPost" is clicked. when in edit mode, add button "save" which um
 the post via the existing put route.
 2: instead of this cumbersome inline building, extend index_csr.html with proper post
 container thats populated and repeated.
-
+3: see pagination in backend_app.py and add appropriate pagination button to html and use in main.js
 */
+let currentPage = 1;
+
 // Function that runs once the window is fully loaded
 window.onload = function () {
     // Attempt to retrieve the API base URL from the local storage
@@ -16,27 +18,57 @@ window.onload = function () {
         document.getElementById('api-base-url').value = savedBaseUrl;
         loadPosts();
     }
+
+    document.getElementById('previous-page').addEventListener('click', () => {
+        loadPosts(currentPage - 1);
+    });
+    document.getElementById('next-page').addEventListener('click', () => {
+        loadPosts(currentPage + 1);
+    });
 }
 
 // Function to fetch all the posts from the API and display them on the page
-function loadPosts() {
+function loadPosts(page = 1) {
     // Retrieve the base URL from the input field and save it to local storage
     var baseUrl = document.getElementById('api-base-url').value;
     localStorage.setItem('apiBaseUrl', baseUrl);
 
     // Use the Fetch API to send a GET request to the /posts endpoint
-    fetch(baseUrl + '/posts')
-        .then(response => response.json())  // Parse the JSON data from the response
-        .then(data => {  // Once the data is ready, we can use it
+    fetch(`${baseUrl}/posts?page=${page}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Unable to load posts (${response.status})`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const posts = Array.isArray(data) ? data : data.posts;
+            currentPage = data.page || page;
+
             // Clear out the post container first
             const postContainer = document.getElementById('post-container');
             postContainer.innerHTML = '';
 
-            data.forEach(post => {
+            posts.forEach(post => {
                 postContainer.appendChild(createPostElement(post));
             });
+
+            updatePagination(data);
         })
         .catch(error => console.error('Error:', error));  // If an error occurs, log it to the console
+}
+
+function updatePagination(data) {
+    const pagination = document.getElementById('pagination');
+    const previousButton = document.getElementById('previous-page');
+    const nextButton = document.getElementById('next-page');
+    const pageInfo = document.getElementById('page-info');
+    const totalPages = data.total_pages || 1;
+
+    pagination.hidden = totalPages <= 1;
+    previousButton.disabled = currentPage <= 1;
+    nextButton.disabled = currentPage >= totalPages;
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
 }
 
 function createPostElement(post) {

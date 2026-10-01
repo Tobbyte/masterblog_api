@@ -28,7 +28,7 @@ class MasterblogApi(Masterblog):
     def __init__(self) -> None:
         """Initialize the Flask app with API routes."""
         super().__init__()
-        CORS(self.app)
+        CORS(self.app, supports_credentials=True)
         Limiter(
             key_func=get_remote_address,
             app=self.app,
@@ -51,6 +51,12 @@ class MasterblogApi(Masterblog):
             "/api/posts/<int:id>",
             view_func=self.update_post_api,
             methods=["PUT"],
+        )
+
+        self.app.add_url_rule(
+            "/api/posts/<int:id>/like",
+            view_func=self.like_post_api,
+            methods=["POST"],
         )
 
         self.app.add_url_rule(
@@ -179,6 +185,22 @@ class MasterblogApi(Masterblog):
         else:
             # should already be handled by Flask's method routing, jic
             return jsonify({"error": API_ERR_METHOD_NOT_ALLOWED}), 405
+
+    def like_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
+        """Toggle the current user's like for a post."""
+        try:
+            self._fetch_post_by_id_with_error(id)
+            user_uid = self._get_user_uid()
+            self._toggle_like(id, user_uid)
+            updated_post = self._fetch_post_by_id_with_error(id)
+            likes = updated_post.get("liked_by", [])
+            return jsonify({
+                "id": id,
+                "liked": user_uid in likes,
+                "like_count": len(likes),
+            }), 200
+        except KeyError:
+            return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
 
     def _update_post(
         self,

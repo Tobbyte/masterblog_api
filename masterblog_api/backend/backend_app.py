@@ -5,6 +5,15 @@ from flask_cors import CORS
 from werkzeug import Response
 
 from masterblog_api.app import Masterblog
+from masterblog_api.backend.backend_config import (
+    API_DELETE_SUCCESS,
+    API_ERR_BAD_REQUEST_DATA,
+    API_ERR_INVALID_POST_ID,
+    API_ERR_INVALID_REQUEST_DATA,
+    API_ERR_METHOD_NOT_ALLOWED,
+    API_ERR_POST_NOT_FOUND,
+    API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
+)
 
 
 class MasterblogApi(Masterblog):
@@ -41,6 +50,7 @@ class MasterblogApi(Masterblog):
             methods=["GET"],
         )
 
+
     def get_posts_api(self) -> tuple[Response, int]:
         """Return all blog posts as JSON.
 
@@ -59,7 +69,7 @@ class MasterblogApi(Masterblog):
                 or not post_data.get("title", "").strip()
                 or not post_data.get("content", "").strip()
             ):
-                return jsonify({"error": "Invalid request data"}), 400
+                return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
             new_post = self._add_post(
                 {
@@ -76,14 +86,14 @@ class MasterblogApi(Masterblog):
 
         if sortby_field:
             if sortby_field not in {"id", "title", "content"}:
-                return jsonify({"error": "Bad request"}), 400
+                return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 
             reverse = False
             if sort_direction_field and sort_direction_field not in {
                 "asc",
                 "desc",
             }:
-                return jsonify({"error": "Bad request"}), 400
+                return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 
             reverse = sort_direction_field == "desc"
 
@@ -99,12 +109,12 @@ class MasterblogApi(Masterblog):
         try:
             self._delete_post(int(id))
             return jsonify({
-                "message": f"Post with id {id} has been deleted successfully.",
+                "message": API_DELETE_SUCCESS.format(id=id),
             }), 200
         except ValueError:
-            return jsonify({"error": "Invalid post ID"}), 400
+            return jsonify({"error": API_ERR_INVALID_POST_ID}), 400
         except KeyError:
-            return jsonify({"error": "Post not found"}), 404
+            return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
 
     def _delete_post(self, post_id: int) -> None:
         """Delete a blog post by ID."""
@@ -125,7 +135,7 @@ class MasterblogApi(Masterblog):
                     and not raw_post_data.get("content", "").strip()
                 )
             ):
-                return jsonify({"error": "Invalid request data"}), 400
+                return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
             try:
                 post_id = int(id)
@@ -142,13 +152,13 @@ class MasterblogApi(Masterblog):
                 }), 200
 
             except ValueError:
-                return jsonify({"error": "Invalid post ID"}), 400
+                return jsonify({"error": API_ERR_INVALID_POST_ID}), 400
             except KeyError:
-                return jsonify({"error": "Post not found"}), 404
+                return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
 
         else:
             # should already be handled by Flask's method routing, jic
-            return jsonify({"error": "Method not allowed"}), 405
+            return jsonify({"error": API_ERR_METHOD_NOT_ALLOWED}), 405
 
     def _update_post(
         self,
@@ -170,7 +180,7 @@ class MasterblogApi(Masterblog):
         """Fetch a blog post by ID or raise an error if not found."""
         post = self._fetch_post_by_id(post_id)
         if post is None:
-            raise KeyError(f"Post with id {post_id} not found.")
+            raise KeyError(API_ERR_POST_NOT_FOUND)
         return post
 
     def search_posts_api(self) -> tuple[Response, int]:
@@ -187,7 +197,7 @@ class MasterblogApi(Masterblog):
         content_query = request.args.get("content", "").strip()
 
         if not title_query and not content_query:
-            return jsonify({"error": "Query parameter is required"}), 400
+            return jsonify({"error": API_ERR_SEARCH_QUERY_PARAM_REQUIRED}), 400
 
         match_either = request.args.get("match_either")
 
@@ -198,7 +208,7 @@ class MasterblogApi(Masterblog):
                 "false",
             }:
                 return jsonify({
-                    "error": "Invalid value for match_either",
+                    "error": API_ERR_BAD_REQUEST_DATA,
                 }), 400
 
             match_either = match_either == "true"

@@ -2,6 +2,8 @@
 
 from flask import jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug import Response
 
 from masterblog_api.app import Masterblog
@@ -27,6 +29,11 @@ class MasterblogApi(Masterblog):
         """Initialize the Flask app with API routes."""
         super().__init__()
         CORS(self.app)
+        Limiter(
+            key_func=get_remote_address,
+            app=self.app,
+            default_limits=["100 per minute"],
+        )
 
         self.app.add_url_rule(
             "/api/posts",

@@ -42,7 +42,13 @@ class MasterblogApi(Masterblog):
         )
 
     def get_posts_api(self) -> tuple[Response, int]:
-        """Return all blog posts as JSON."""
+        """Return all blog posts as JSON.
+
+        Via GET: Returns all posts.
+        Via POST: Adds a new post and returns it.
+
+        Accepts optional query params 'sort' and 'direction'.
+        """
         if request.method == "POST":
             print("via post")
             post_data = request.get_json(silent=True)
@@ -62,8 +68,30 @@ class MasterblogApi(Masterblog):
                 },
             )
             return jsonify(new_post), 201
-        print("via get")
-        return jsonify(self.blog_store.load()), 200
+
+        all_posts = self.blog_store.load()
+
+        sort_by_field = request.args.get("sort", "").strip()
+        sort_direction_field = request.args.get("direction", "").strip()
+
+        if sort_by_field:
+            if sort_by_field not in {"id", "title", "content"}:
+                return jsonify({"error": "Invalid sort field"}), 400
+
+            reverse = False
+            if sort_direction_field and sort_direction_field in {
+                "asc",
+                "desc",
+            }:
+                # ignore bad sort parameter, default to asc
+                reverse = sort_direction_field == "desc"
+
+            all_posts.sort(
+                key=lambda post: post[sort_by_field],
+                reverse=reverse,
+            )
+
+        return jsonify(all_posts), 200
 
     def delete_post_api(self, id: str) -> tuple[Response, int]:
         """Delete a blog post by ID and return the result as JSON."""

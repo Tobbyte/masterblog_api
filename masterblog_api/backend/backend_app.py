@@ -25,7 +25,8 @@ class MasterblogApi(Masterblog):
     def __init__(self) -> None:
         """Initialize the Flask app with API routes."""
         super().__init__()
-        CORS(self.app)  # This will enable CORS for all routes
+        CORS(self.app)
+
         self.app.add_url_rule(
             "/api/posts",
             view_func=self.get_posts_api,
@@ -57,7 +58,7 @@ class MasterblogApi(Masterblog):
         Via GET: Returns all posts.
         Via POST: Adds a new post and returns it.
 
-        Accepts optional query params 'sort' and 'direction'.
+        Accepts optional query params 'sort' and 'direction' on GET.
         """
         if request.method == "POST":
             print("via post")
@@ -104,12 +105,15 @@ class MasterblogApi(Masterblog):
 
         return jsonify(all_posts), 200
 
-    def delete_post_api(self, id: str) -> tuple[Response, int]:
-        """Delete a blog post by ID and return the result as JSON."""
+    def delete_post_api(self, post_id: str) -> tuple[Response, int]:
+        """Delete a blog post by ID.
+
+        Returns the result as JSON.
+        """
         try:
-            self._delete_post(int(id))
+            self._delete_post(int(post_id))
             return jsonify({
-                "message": API_DELETE_SUCCESS.format(id=id),
+                "message": API_DELETE_SUCCESS.format(id=post_id),
             }), 200
         except ValueError:
             return jsonify({"error": API_ERR_INVALID_POST_ID}), 400
@@ -118,15 +122,18 @@ class MasterblogApi(Masterblog):
 
     def _delete_post(self, post_id: int) -> None:
         """Delete a blog post by ID."""
-        if self._fetch_post_by_id(post_id) is None:
-            raise KeyError(f"Post with id {post_id} not found.")
+        self._fetch_post_by_id_with_error(post_id)  # raise if none
+
         super()._del_post(post_id)
 
-    def update_post_api(self, id: str) -> tuple[Response, int]:
-        """Update a blog post by ID and return the result as JSON."""
+    def update_post_api(self, post_id: str) -> tuple[Response, int]:
+        """Update a blog post by ID.
+
+        Returns the result as JSON.
+        """
         if request.method == "PUT":
             raw_post_data = request.get_json(silent=True)
-            print(raw_post_data)
+
             if (
                 not raw_post_data
                 or not isinstance(raw_post_data, dict)
@@ -138,15 +145,15 @@ class MasterblogApi(Masterblog):
                 return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
             try:
-                post_id = int(id)
-                old_post = self._fetch_post_by_id_with_error(post_id)
+                post_id_int = int(post_id)
+                old_post = self._fetch_post_by_id_with_error(post_id_int)
                 updated_post = self._update_post(
-                    post_id,
+                    post_id_int,
                     old_post,
                     raw_post_data,
                 )
                 return jsonify({
-                    "id": post_id,
+                    "id": post_id_int,
                     "title": updated_post["title"],
                     "content": updated_post["content"],
                 }), 200
@@ -167,7 +174,7 @@ class MasterblogApi(Masterblog):
         raw_new_post_data: dict,
     ) -> dict:
         """Update a blog post by ID."""
-        # clean empty fields of new posts data for merging.
+        # clean empty fields of new post_data for merging.
         new_post_data = {
             k: v for k, v in raw_new_post_data.items() if v.strip()
         }
@@ -216,7 +223,7 @@ class MasterblogApi(Masterblog):
         matching_posts = self._search_posts(
             title_query,
             content_query,
-            match_either,  # pyright: ignore[reportArgumentType]
+            match_either=match_either,  # pyright: ignore[reportArgumentType]
         )
         return jsonify(matching_posts), 200
 
@@ -224,6 +231,7 @@ class MasterblogApi(Masterblog):
         self,
         title_query: str | None = None,
         content_query: str | None = None,
+        *,
         match_either: bool | None = False,
     ) -> list[dict]:
         """Search for blog posts by title and/or content."""

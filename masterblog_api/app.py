@@ -226,11 +226,14 @@ class Masterblog:
         self.blog_store.save(posts_copy)
         return new_post
 
-    def _del_post(self, post_id: int) -> None:
+    def _del_post(self, post_id: int) -> dict:
         """Delete a blog post by its ID."""
         posts_copy = deepcopy(self.blog_store.load())
         posts = [post for post in posts_copy if post["id"] != post_id]
         self.blog_store.save(posts)
+        return next(  # not very elegant to filter again, ok for now.
+            filter(lambda post: post["id"] == post_id, posts_copy),
+        )
 
     def _update_post_data(self, post_id: int, new_post_data: dict) -> dict:
         """Update the data of a blog post by its ID.

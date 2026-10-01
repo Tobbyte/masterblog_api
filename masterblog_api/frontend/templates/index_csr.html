@@ -25,6 +25,19 @@
         <div id="post-container">
             <!-- Blog posts will be inserted here by JavaScript -->
         </div>
+<template id="post-template">
+    <article class="post">
+        <h2>
+            <span class="post-author"></span>: <span class="post-title"></span>
+        </h2>
+        <p class="post-content"></p>
+        <div class="post-actions">
+            <button type="button" class="delete-button">Delete</button>
+            <button type="button" class="edit-button">Edit</button>
+            <button type="button" class="save-button" hidden>Save</button>
+        </div>
+    </article>
+</template>
     </div>
 
     <script src="../static/main.js"></script>

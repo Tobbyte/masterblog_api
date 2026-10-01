@@ -3,7 +3,8 @@ Some changes made by ai. Following queries were used:
 1: make the #sym:postDiv in a propper way with nested elements to make them contenteditable
 when button "editPost" is clicked. when in edit mode, add button "save" which umdates
 the post via the existing put route.
-
+2: instead of this cumbersome inline building, extend index_csr.html with proper post
+container thats populated and repeated.
 
 */
 // Function that runs once the window is fully loaded
@@ -31,7 +32,6 @@ function loadPosts() {
             const postContainer = document.getElementById('post-container');
             postContainer.innerHTML = '';
 
-            // Build each post from nested elements so its fields can be edited safely.
             data.forEach(post => {
                 postContainer.appendChild(createPostElement(post));
             });
@@ -40,39 +40,26 @@ function loadPosts() {
 }
 
 function createPostElement(post) {
-    const postDiv = document.createElement('div');
+    const template = document.getElementById('post-template');
+    const postDiv = template.content.firstElementChild.cloneNode(true);
     postDiv.className = 'post';
     postDiv.dataset.postId = post.id;
 
-    const heading = document.createElement('h2');
-    const author = document.createElement('span');
-    author.className = 'post-author';
+    const author = postDiv.querySelector('.post-author');
     author.textContent = post.author || 'n.n.';
-    const title = document.createElement('span');
-    title.className = 'post-title';
+    const title = postDiv.querySelector('.post-title');
     title.textContent = post.title;
-    heading.append(author, ': ', title);
-
-    const content = document.createElement('p');
-    content.className = 'post-content';
+    const content = postDiv.querySelector('.post-content');
     content.textContent = post.content;
 
-    const actions = document.createElement('div');
-    actions.className = 'post-actions';
-
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.textContent = 'Delete';
+    const deleteButton = postDiv.querySelector('.delete-button');
     deleteButton.addEventListener('click', () => deletePost(post.id));
 
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'edit-button';
-    editButton.textContent = 'Edit';
+    const editButton = postDiv.querySelector('.edit-button');
     editButton.addEventListener('click', () => editPost(post.id));
 
-    actions.append(deleteButton, editButton);
-    postDiv.append(heading, content, actions);
+    const saveButton = postDiv.querySelector('.save-button');
+    saveButton.addEventListener('click', () => savePost(post.id));
     return postDiv;
 }
 
@@ -94,12 +81,9 @@ function editPost(postId) {
     });
 
     const editButton = postDiv.querySelector('.edit-button');
-    const saveButton = document.createElement('button');
-    saveButton.type = 'button';
-    saveButton.className = 'save-button';
-    saveButton.textContent = 'Save';
-    saveButton.addEventListener('click', () => savePost(postId));
-    editButton.replaceWith(saveButton);
+    const saveButton = postDiv.querySelector('.save-button');
+    editButton.hidden = true;
+    saveButton.hidden = false;
     title.focus();
 }
 

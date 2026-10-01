@@ -71,23 +71,24 @@ class MasterblogApi(Masterblog):
 
         all_posts = self.blog_store.load()
 
-        sort_by_field = request.args.get("sort", "").strip()
+        sortby_field = request.args.get("sort", "").strip()
         sort_direction_field = request.args.get("direction", "").strip()
 
-        if sort_by_field:
-            if sort_by_field not in {"id", "title", "content"}:
-                return jsonify({"error": "Invalid sort field"}), 400
+        if sortby_field:
+            if sortby_field not in {"id", "title", "content"}:
+                return jsonify({"error": "Bad request"}), 400
 
             reverse = False
-            if sort_direction_field and sort_direction_field in {
+            if sort_direction_field and sort_direction_field not in {
                 "asc",
                 "desc",
             }:
-                # ignore bad sort parameter, default to asc
-                reverse = sort_direction_field == "desc"
+                return jsonify({"error": "Bad request"}), 400
+
+            reverse = sort_direction_field == "desc"
 
             all_posts.sort(
-                key=lambda post: post[sort_by_field],
+                key=lambda post: (post[sortby_field], post["id"]),
                 reverse=reverse,
             )
 

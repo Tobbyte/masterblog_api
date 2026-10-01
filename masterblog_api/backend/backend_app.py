@@ -35,6 +35,12 @@ class MasterblogApi(Masterblog):
             methods=["PUT"],
         )
 
+        self.app.add_url_rule(
+            "/api/posts/search",
+            view_func=self.search_posts_api,
+            methods=["GET"],
+        )
+
     def get_posts_api(self) -> tuple[Response, int]:
         """Return all blog posts as JSON."""
         if request.method == "POST":
@@ -137,6 +143,79 @@ class MasterblogApi(Masterblog):
         if post is None:
             raise KeyError(f"Post with id {post_id} not found.")
         return post
+
+    def search_posts_api(self) -> tuple[Response, int]:
+        """Search for blog posts by title and/or content.
+
+        Accepts query parameters:
+        - title: The title to search for (optional).
+        - content: The content to search for (optional).
+        - match_either: If "true", matches posts that contain either
+          the title or content (default: False). Ignored if only one of
+          title or content is provided.
+        """
+        title_query = request.args.get("title", "").strip()
+        content_query = request.args.get("content", "").strip()
+
+        if not title_query and not content_query:
+            return jsonify({"error": "Query parameter is required"}), 400
+
+        match_either = request.args.get("match_either")
+
+        if match_either:
+            match_either = match_either.lower().strip()
+            if match_either not in {
+                "true",
+                "false",
+            }:
+                return jsonify({
+                    "error": "Invalid value for match_either",
+                }), 400
+
+            match_either = match_either == "true"
+
+        matching_posts = self._search_posts(
+            title_query,
+            content_query,
+            match_either,  # pyright: ignore[reportArgumentType]
+        )
+        return jsonify(matching_posts), 200
+
+    def _search_posts(
+        self,
+        title_query: str | None = None,
+        content_query: str | None = None,
+        match_either: bool | None = False,
+    ) -> list[dict]:
+        """Search for blog posts by title and/or content."""
+        all_posts = self.blog_store.load()
+
+        if title_query and not content_query:
+            return [
+                post
+                for post in all_posts
+                if title_query.lower() in post["title"].lower()
+            ]
+        if content_query and not title_query:
+            return [
+                post
+                for post in all_posts
+                if content_query.lower() in post["content"].lower()
+            ]
+        if content_query and title_query and not match_either:
+            return [
+                post
+                for post in all_posts
+                if title_query.lower() in post["title"].lower()  # pyright: ignore[reportOptionalMemberAccess]
+                and content_query.lower() in post["content"].lower()  # pyright: ignore[reportOptionalMemberAccess]
+            ]
+        return [
+            post
+            for post in all_posts
+            if title_query.lower() in post["title"].lower()  # pyright: ignore[reportOptionalMemberAccess]
+            or content_query.lower() in post["content"].lower()  # pyright: ignore[reportOptionalMemberAccess]
+        ]
+
 
 if __name__ == "__main__":
     MasterblogApi().run(debug=True)

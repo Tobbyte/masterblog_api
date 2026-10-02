@@ -22,6 +22,19 @@ from masterblog_api.backend.backend_config import (
     API_ERR_INVALID_REQUEST_DATA,
     API_ERR_METHOD_NOT_ALLOWED,
     API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
+    API_PAGINATION_DEFAULT_PAGE,
+    API_PAGINATION_PARAM_PAGE,
+    API_PAGINATION_PARAM_PERPAGE,
+    API_SORT_PARAM_ASC,
+    API_SORT_PARAM_DESC,
+    API_SORT_PARAM_MATCHEITHER,
+    API_SORT_PARAM_MATCHEITHER_FALSE,
+    API_SORT_PARAM_MATCHEITHER_TRUE,
+    POST_FIELD_AUTHOR,
+    POST_FIELD_CONTENT,
+    POST_FIELD_ID,
+    POST_FIELD_TITLE,
+    POST_FILED_LIKEDBY,
 )
 from masterblog_api.backend.swagger import init_swagger_ui
 from masterblog_api.masterblog_app import Masterblog
@@ -117,17 +130,17 @@ class MasterblogApi(Masterblog):
             not post_data
             or not isinstance(post_data, dict)
             or not all(isinstance(cont, str) for cont in post_data.values())
-            or not post_data.get("title", "").strip()
-            or not post_data.get("content", "").strip()
-            or not post_data.get("author", "").strip()
+            or not post_data.get(POST_FIELD_TITLE, "").strip()
+            or not post_data.get(POST_FIELD_CONTENT, "").strip()
+            or not post_data.get(POST_FIELD_AUTHOR, "").strip()
         ):
             return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
         new_post = self._add_post(
             {
-                "author": post_data["author"],
-                "title": post_data["title"],
-                "content": post_data["content"],
+                POST_FIELD_AUTHOR: post_data[POST_FIELD_AUTHOR],
+                POST_FIELD_TITLE: post_data[POST_FIELD_TITLE],
+                POST_FIELD_CONTENT: post_data[POST_FIELD_CONTENT],
             },
         )
         return jsonify(new_post), 201
@@ -162,7 +175,7 @@ class MasterblogApi(Masterblog):
                 or not all(
                     isinstance(cont, str) for cont in raw_post_data.values()
                 )
-                or not raw_post_data.get("title", "").strip()
+                or not raw_post_data.get(POST_FIELD_TITLE, "").strip()
             ):
                 return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
@@ -174,9 +187,9 @@ class MasterblogApi(Masterblog):
                     raw_post_data,
                 )
                 return jsonify({
-                    "id": id,
-                    "title": updated_post["title"],
-                    "content": updated_post["content"],
+                    POST_FIELD_ID: id,
+                    POST_FIELD_TITLE: updated_post[POST_FIELD_TITLE],
+                    POST_FIELD_CONTENT: updated_post[POST_FIELD_CONTENT],
                 }), 200
 
             except ValueError:
@@ -195,7 +208,7 @@ class MasterblogApi(Masterblog):
             user_uid = self._get_user_uid()
             self._toggle_like(id, user_uid)
             updated_post = self._fetch_post_by_id_with_error(id)
-            likes = updated_post.get("liked_by", [])
+            likes = updated_post.get(POST_FILED_LIKEDBY, [])
             return jsonify({
                 "id": id,
                 "liked": user_uid in likes,
@@ -214,25 +227,25 @@ class MasterblogApi(Masterblog):
           the title or content (default: False). Ignored if only one of
           title or content is provided.
         """
-        title_query = request.args.get("title", "").strip()
-        content_query = request.args.get("content", "").strip()
+        title_query = request.args.get(POST_FIELD_TITLE, "").strip()
+        content_query = request.args.get(POST_FIELD_CONTENT, "").strip()
 
         if not title_query and not content_query:
             return jsonify({"error": API_ERR_SEARCH_QUERY_PARAM_REQUIRED}), 400
 
-        match_either = request.args.get("match_either")
+        match_either = request.args.get(API_SORT_PARAM_MATCHEITHER)
 
         if match_either:
             match_either = match_either.lower().strip()
             if match_either not in {
-                "true",
-                "false",
+                API_SORT_PARAM_MATCHEITHER_TRUE,
+                API_SORT_PARAM_MATCHEITHER_FALSE,
             }:
                 return jsonify({
                     "error": API_ERR_BAD_REQUEST_DATA,
                 }), 400
 
-            match_either = match_either == "true"
+            match_either = match_either == API_SORT_PARAM_MATCHEITHER_TRUE
 
         matching_posts = self._search_posts(
             title_query,
@@ -264,7 +277,7 @@ class MasterblogApi(Masterblog):
         new_post_data = {
             k: v
             for k, v in raw_new_post_data.items()
-            if k in {"title", "content"} and v.strip()
+            if k in {POST_FIELD_TITLE, POST_FIELD_CONTENT} and v.strip()
         }
 
         new_post_data = {**old_post, **new_post_data}
@@ -285,26 +298,26 @@ class MasterblogApi(Masterblog):
             return [
                 post
                 for post in all_posts
-                if title_query.lower() in post["title"].lower()
+                if title_query.lower() in post[POST_FIELD_TITLE].lower()
             ]
         if content_query and not title_query:
             return [
                 post
                 for post in all_posts
-                if content_query.lower() in post["content"].lower()
+                if content_query.lower() in post[POST_FIELD_CONTENT].lower()
             ]
         if content_query and title_query and not match_either:
             return [
                 post
                 for post in all_posts
-                if title_query.lower() in post["title"].lower()  # pyright: ignore[reportOptionalMemberAccess]
-                and content_query.lower() in post["content"].lower()  # pyright: ignore[reportOptionalMemberAccess]
+                if title_query.lower() in post[POST_FIELD_TITLE].lower()  # pyright: ignore[reportOptionalMemberAccess]
+                and content_query.lower() in post[POST_FIELD_CONTENT].lower()  # pyright: ignore[reportOptionalMemberAccess]
             ]
         return [
             post
             for post in all_posts
-            if title_query.lower() in post["title"].lower()  # pyright: ignore[reportOptionalMemberAccess]
-            or content_query.lower() in post["content"].lower()  # pyright: ignore[reportOptionalMemberAccess]
+            if title_query.lower() in post[POST_FIELD_TITLE].lower()  # pyright: ignore[reportOptionalMemberAccess]
+            or content_query.lower() in post[POST_FIELD_CONTENT].lower()  # pyright: ignore[reportOptionalMemberAccess]
         ]
 
     ### statics ###
@@ -318,20 +331,24 @@ class MasterblogApi(Masterblog):
         if not sortby_field:
             return posts
 
-        if sortby_field not in {"id", "title", "content"}:
-            return None
-
-        if sort_direction_field and sort_direction_field not in {
-            "asc",
-            "desc",
+        if sortby_field not in {
+            POST_FIELD_ID,
+            POST_FIELD_TITLE,
+            POST_FIELD_CONTENT,
         }:
             return None
 
-        reverse = sort_direction_field == "desc"
+        if sort_direction_field and sort_direction_field not in {
+            API_SORT_PARAM_ASC,
+            API_SORT_PARAM_DESC,
+        }:
+            return None
+
+        reverse = sort_direction_field == API_SORT_PARAM_DESC
 
         return sorted(
             posts,
-            key=lambda post: (post[sortby_field], post["id"]),
+            key=lambda post: (post[sortby_field], post[POST_FIELD_ID]),
             reverse=reverse,
         )
 
@@ -339,9 +356,17 @@ class MasterblogApi(Masterblog):
     def _paginate_posts(posts: list[dict]) -> dict | None:
         """Return one page of posts with pagination metadata."""
         try:
-            page = int(request.args.get("page", "1"))
+            page = int(
+                request.args.get(
+                    API_PAGINATION_PARAM_PAGE,
+                    API_PAGINATION_DEFAULT_PAGE,
+                ),
+            )
             per_page = int(
-                request.args.get("per_page", str(API_DEFAULT_PAGE_SIZE)),
+                request.args.get(
+                    API_PAGINATION_PARAM_PERPAGE,
+                    str(API_DEFAULT_PAGE_SIZE),
+                ),
             )
         except ValueError:
             return None
@@ -355,8 +380,8 @@ class MasterblogApi(Masterblog):
 
         return {
             "posts": posts[start : start + per_page],
-            "page": page,
-            "per_page": per_page,
+            API_PAGINATION_PARAM_PAGE: page,
+            API_PAGINATION_PARAM_PERPAGE: per_page,
             "total": total,
             "total_pages": total_pages,
         }

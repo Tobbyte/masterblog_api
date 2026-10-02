@@ -19,6 +19,7 @@ class MasterblogSSR(Masterblog):
         """Initialize the Flask app and set up routes."""
         super().__init__()
         self.setup_routes()
+        self.setup_error_handlers()
 
     def setup_routes(self) -> None:
         """Set up the server-side rendered routes."""
@@ -48,6 +49,21 @@ class MasterblogSSR(Masterblog):
         )
 
     ### route handlers ###
+
+    def setup_error_handlers(self) -> None:
+        """Register err handlers for serving html errors."""
+        self.app.register_error_handler(404, self.page_not_found)
+        self.app.register_error_handler(500, self.internal_server_error)
+
+    @staticmethod
+    def page_not_found(_) -> tuple:  # noqa: ANN001
+        """Render the 404 error page."""
+        return render_template("404.html"), 404
+
+    @staticmethod
+    def internal_server_error(error: Exception) -> tuple:
+        """Render the 500 error page."""
+        return render_template("500.html", error=error), 500
 
     def index(self) -> str:
         """Render the index page with blog posts."""

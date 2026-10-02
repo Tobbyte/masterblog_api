@@ -74,19 +74,19 @@ class MasterblogApi(Masterblog):
         )
 
         self.app.add_url_rule(
-            "/api/posts/<int:id>",
+            "/api/posts/<int:post_id>",
             view_func=self.delete_post_api,
             methods=["DELETE"],
         )
 
         self.app.add_url_rule(
-            "/api/posts/<int:id>",
+            "/api/posts/<int:post_id>",
             view_func=self.update_post_api,
-            methods=["PUT"],
+            methods=["PUT"],  # should be PATCH, but exercise says PUT
         )
 
         self.app.add_url_rule(
-            "/api/posts/<int:id>/like",
+            "/api/posts/<int:post_id>/like",
             view_func=self.like_post_api,
             methods=["POST"],
         )
@@ -145,23 +145,22 @@ class MasterblogApi(Masterblog):
         )
         return jsonify(new_post), 201
 
-
-    def delete_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
+    def delete_post_api(self, post_id: int) -> tuple[Response, int]:
         """Delete a blog post by ID.
 
         Returns the result as JSON.
         """
         try:
-            self._delete_post(id)
+            self._delete_post(post_id)
             return jsonify({
-                "message": API_DELETE_SUCCESS.format(id=id),
+                "message": API_DELETE_SUCCESS.format(id=post_id),
             }), 200
         except ValueError:
             return jsonify({"error": API_ERR_INVALID_POST_ID}), 400
         except KeyError:
             return jsonify({"error": ERR_POST_NOT_FOUND}), 404
 
-    def update_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
+    def update_post_api(self, post_id: int) -> tuple[Response, int]:
         """Update a blog post by ID.
 
         Returns the result as JSON.
@@ -180,14 +179,14 @@ class MasterblogApi(Masterblog):
                 return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
             try:
-                old_post = self._fetch_post_by_id_with_error(id)
+                old_post = self._fetch_post_by_id_with_error(post_id)
                 updated_post = self._update_post(
-                    id,
+                    post_id,
                     old_post,
                     raw_post_data,
                 )
                 return jsonify({
-                    POST_FIELD_ID: id,
+                    POST_FIELD_ID: post_id,
                     POST_FIELD_TITLE: updated_post[POST_FIELD_TITLE],
                     POST_FIELD_CONTENT: updated_post[POST_FIELD_CONTENT],
                 }), 200
@@ -201,16 +200,16 @@ class MasterblogApi(Masterblog):
             # should already be handled by Flask's method routing, jic
             return jsonify({"error": API_ERR_METHOD_NOT_ALLOWED}), 405
 
-    def like_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
+    def like_post_api(self, post_id: int) -> tuple[Response, int]:
         """Toggle the current user's like for a post."""
         try:
-            self._fetch_post_by_id_with_error(id)
+            self._fetch_post_by_id_with_error(post_id)
             user_uid = self._get_user_uid()
-            self._toggle_like(id, user_uid)
-            updated_post = self._fetch_post_by_id_with_error(id)
+            self._toggle_like(post_id, user_uid)
+            updated_post = self._fetch_post_by_id_with_error(post_id)
             likes = updated_post.get(POST_FILED_LIKEDBY, [])
             return jsonify({
-                "id": id,
+                "id": post_id,
                 "liked": user_uid in likes,
                 "like_count": len(likes),
             }), 200

@@ -1,0 +1,24 @@
+info:
+  name: update
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: http://127.0.0.1:5002/api/posts/8
+  body:
+    type: json
+    data: |-
+      {
+        "title": "brune",
+        "content": "via bruno updated",
+        "author": "bruno"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

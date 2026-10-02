@@ -1,0 +1,19 @@
+info:
+  name: search
+  type: http
+  seq: 4
+
+http:
+  method: DELETE
+  url: http://127.0.0.1:5002/api/posts/5
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

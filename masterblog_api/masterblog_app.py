@@ -31,6 +31,11 @@ class Masterblog:
     for managing blog posts, including adding, deleting, updating, and
     toggling likes.
     It also handles user sessions and unique identifiers for posts.
+
+    TODOs:
+    - blogstore should be injected as dependency, not created here.
+    - check_db_health is suboptimal and needs caching
+    - masterblog base class should be split further.
     """
 
     def __init__(self) -> None:

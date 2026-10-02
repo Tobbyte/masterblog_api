@@ -50,6 +50,13 @@ class MasterblogApi(Masterblog):
     original with a full RESTFULapi, extending the original
     functionalities with search, pagination, rate limiting, CORS support
     and swagger documentation.
+
+    TODOs:
+    - the KeyError for post-not-found should be refactored into a custom
+    exception class.
+    - routes like f.e. update_post_api expect all fields as str. Simply
+    ignoring mis-formatted, unneeded fields would be more friendly.
+    - search results ignore sorting params.
     """
 
     def __init__(self) -> None:

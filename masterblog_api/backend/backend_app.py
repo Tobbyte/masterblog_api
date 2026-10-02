@@ -217,10 +217,9 @@ class MasterblogApi(Masterblog):
                 return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
             try:
-                old_post = self._fetch_post_by_id_with_error(post_id)
+                self._fetch_post_by_id_with_error(post_id)
                 updated_post = self._update_post(
                     post_id,
-                    old_post,
                     raw_post_data,
                 )
                 return jsonify({
@@ -306,7 +305,6 @@ class MasterblogApi(Masterblog):
     def _update_post(
         self,
         post_id: int,
-        old_post: dict,
         raw_new_post_data: dict,
     ) -> dict:
         """Update a blog post by ID."""
@@ -316,8 +314,6 @@ class MasterblogApi(Masterblog):
             for k, v in raw_new_post_data.items()
             if k in {POST_FIELD_TITLE, POST_FIELD_CONTENT} and v.strip()
         }
-
-        new_post_data = {**old_post, **new_post_data}
 
         return super()._update_post_data(post_id, new_post_data)
 

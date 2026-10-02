@@ -325,30 +325,21 @@ class MasterblogApi(Masterblog):
         """Search for blog posts by title and/or content."""
         all_posts = self.blog_store.load()
 
-        if title_query and not content_query:
-            return [
-                post
-                for post in all_posts
-                if title_query.lower() in post[POST_FIELD_TITLE].lower()
+        queries = [
+            (q.lower(), f)
+            for q, f in [
+                (title_query, POST_FIELD_TITLE),
+                (content_query, POST_FIELD_CONTENT),
             ]
-        if content_query and not title_query:
-            return [
-                post
-                for post in all_posts
-                if content_query.lower() in post[POST_FIELD_CONTENT].lower()
-            ]
-        if content_query and title_query and not match_either:
-            return [
-                post
-                for post in all_posts
-                if title_query.lower() in post[POST_FIELD_TITLE].lower()  # pyright: ignore[reportOptionalMemberAccess]
-                and content_query.lower() in post[POST_FIELD_CONTENT].lower()  # pyright: ignore[reportOptionalMemberAccess]
-            ]
+            if q
+        ]
+
+        any_or_all = any if match_either else all
+
         return [
             post
             for post in all_posts
-            if title_query.lower() in post[POST_FIELD_TITLE].lower()  # pyright: ignore[reportOptionalMemberAccess]
-            or content_query.lower() in post[POST_FIELD_CONTENT].lower()  # pyright: ignore[reportOptionalMemberAccess]
+            if any_or_all(q in post[f].lower() for q, f in queries)
         ]
 
     ### statics ###

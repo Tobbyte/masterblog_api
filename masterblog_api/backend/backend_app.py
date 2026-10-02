@@ -356,4 +356,4 @@ class MasterblogApi(Masterblog):
 
 
 if __name__ == "__main__":
-    MasterblogApi().run(host="0.0.0.0", port=5001, debug=True)  # noqa: S104
+    MasterblogApi().run(host="0.0.0.0", port=5002, debug=True)  # noqa: S104

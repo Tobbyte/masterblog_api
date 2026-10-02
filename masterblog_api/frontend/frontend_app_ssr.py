@@ -1,5 +1,11 @@
 """Server-side rendered frontend for the Masterblog application."""
 
+import sys
+from pathlib import Path
+
+# make runnable from wherever.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from flask import abort, redirect, render_template, request, url_for
 from werkzeug import Response
 
@@ -90,4 +96,4 @@ class MasterblogSSR(Masterblog):
 
 
 if __name__ == "__main__":
-    MasterblogSSR().run(host="0.0.0.0", port=5000, debug=True)  # noqa: S104
+    MasterblogSSR().run(host="0.0.0.0", port=5001, debug=True)  # noqa: S104

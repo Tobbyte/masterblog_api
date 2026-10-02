@@ -228,7 +228,9 @@ class MasterblogApi(Masterblog):
         """Update a blog post by ID."""
         # clean empty fields of new post_data for merging.
         new_post_data = {
-            k: v for k, v in raw_new_post_data.items() if v.strip()
+            k: v
+            for k, v in raw_new_post_data.items()
+            if k in {"title", "content"} and v.strip()
         }
 
         new_post_data = {**old_post, **new_post_data}

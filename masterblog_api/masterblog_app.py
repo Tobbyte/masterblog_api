@@ -171,7 +171,7 @@ class Masterblog:
             else post_copy
             for post_copy in posts_copy
         ]
-        # TODO: shouldn't I catch here?
+
         self.blog_store.save(posts)
         return next(  # not very elegant to filter again, ok for now.
             filter(lambda post: post["id"] == post_id, posts),

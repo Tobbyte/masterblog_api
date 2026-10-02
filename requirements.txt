@@ -2,3 +2,4 @@ werkzeug
 flask
 flask_cors
 flask-limiter
+flask_swagger_ui

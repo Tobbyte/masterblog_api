@@ -4,6 +4,7 @@ from flask import jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug import Response
 
 from masterblog_api.app import Masterblog
@@ -17,6 +18,22 @@ from masterblog_api.backend.backend_config import (
     API_ERR_POST_NOT_FOUND,
     API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
 )
+
+
+def init_swagger_ui(app):
+    SWAGGER_URL = (
+        "/api/docs"  # (1) swagger endpoint e.g. HTTP://localhost:5002/api/docs
+    )
+    API_URL = "/static/swagger_masterblog.json"  # (2) ensure you create this dir and file
+
+    swagger_ui_blueprint = get_swaggerui_blueprint(
+        SWAGGER_URL,
+        API_URL,
+        config={
+            "app_name": "Masterblog_api",  # (3) You can change this if you like
+        },
+    )
+    app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 
 
 class MasterblogApi(Masterblog):
@@ -34,7 +51,7 @@ class MasterblogApi(Masterblog):
             app=self.app,
             default_limits=["100 per minute"],
         )
-
+        init_swagger_ui(self.app)
         self.app.add_url_rule(
             "/api/posts",
             view_func=self.get_posts_api,

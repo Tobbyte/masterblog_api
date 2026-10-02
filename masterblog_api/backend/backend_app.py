@@ -3,6 +3,8 @@
 import sys
 from pathlib import Path
 
+from masterblog_api.config import ERR_POST_NOT_FOUND
+
 # make runnable from wherever.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
@@ -19,7 +21,6 @@ from masterblog_api.backend.backend_config import (
     API_ERR_INVALID_POST_ID,
     API_ERR_INVALID_REQUEST_DATA,
     API_ERR_METHOD_NOT_ALLOWED,
-    API_ERR_POST_NOT_FOUND,
     API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
 )
 from masterblog_api.backend.swagger import init_swagger_ui
@@ -145,7 +146,7 @@ class MasterblogApi(Masterblog):
         except ValueError:
             return jsonify({"error": API_ERR_INVALID_POST_ID}), 400
         except KeyError:
-            return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
+            return jsonify({"error": ERR_POST_NOT_FOUND}), 404
 
     def update_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
         """Update a blog post by ID.
@@ -181,7 +182,7 @@ class MasterblogApi(Masterblog):
             except ValueError:
                 return jsonify({"error": API_ERR_INVALID_POST_ID}), 400
             except KeyError:
-                return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
+                return jsonify({"error": ERR_POST_NOT_FOUND}), 404
 
         else:
             # should already be handled by Flask's method routing, jic
@@ -201,7 +202,7 @@ class MasterblogApi(Masterblog):
                 "like_count": len(likes),
             }), 200
         except KeyError:
-            return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
+            return jsonify({"error": ERR_POST_NOT_FOUND}), 404
 
     def search_posts_api(self) -> tuple[Response, int]:
         """Search for blog posts by title and/or content.

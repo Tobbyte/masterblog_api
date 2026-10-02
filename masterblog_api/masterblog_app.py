@@ -15,10 +15,10 @@ from flask import (
 )
 from werkzeug.exceptions import InternalServerError
 
-from masterblog_api.backend.backend_config import API_ERR_POST_NOT_FOUND
 from masterblog_api.blog_store import BlogStore
 from masterblog_api.config import (
     ERR_NO_POST_UID,
+    ERR_POST_NOT_FOUND,
     ERR_SAVE_POST_UID,
     UID_FILE_PATH,
 )
@@ -139,7 +139,7 @@ class Masterblog:
         """Fetch a blog post by ID or raise an error if not found."""
         post = self._fetch_post_by_id(post_id)
         if post is None:
-            raise KeyError(API_ERR_POST_NOT_FOUND)
+            raise KeyError(ERR_POST_NOT_FOUND)
         return post
 
     ### routes logic ###

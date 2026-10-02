@@ -31,10 +31,10 @@ class MasterblogApi(Masterblog):
 
     Inherits from Masterblog and adds API routes.
 
-    Apart from the original Masterblog class being refactored into a shared
-    and a sole ssr class, the following class extends the original
-    with a full RESTFULapi, extending the original functionalities
-    with search, pagination, rate limiting, CORS support
+    Apart from the original Masterblog class being refactored into a
+    shared and a sole ssr class, the following class extends the
+    original with a full RESTFULapi, extending the original
+    functionalities with search, pagination, rate limiting, CORS support
     and swagger documentation.
     """
 

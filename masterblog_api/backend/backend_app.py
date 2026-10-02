@@ -1,13 +1,17 @@
 """Backend module for the Masterblog application."""
 
+import sys
+from pathlib import Path
+
+# make runnable from wherever.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from flask import jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug import Response
 
-from masterblog_api.app import Masterblog
 from masterblog_api.backend.backend_config import (
     API_DEFAULT_PAGE_SIZE,
     API_DELETE_SUCCESS,
@@ -18,28 +22,20 @@ from masterblog_api.backend.backend_config import (
     API_ERR_POST_NOT_FOUND,
     API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
 )
-
-
-def init_swagger_ui(app):
-    SWAGGER_URL = (
-        "/api/docs"  # (1) swagger endpoint e.g. HTTP://localhost:5002/api/docs
-    )
-    API_URL = "/static/swagger_masterblog.json"  # (2) ensure you create this dir and file
-
-    swagger_ui_blueprint = get_swaggerui_blueprint(
-        SWAGGER_URL,
-        API_URL,
-        config={
-            "app_name": "Masterblog_api",  # (3) You can change this if you like
-        },
-    )
-    app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+from masterblog_api.backend.swagger import init_swagger_ui
+from masterblog_api.masterblog_app import Masterblog
 
 
 class MasterblogApi(Masterblog):
     """A simple Flask app for a blog with API support.
 
     Inherits from Masterblog and adds API routes.
+
+    Apart from the original Masterblog class being refactored into a shared
+    and a sole ssr class, the following class extends the original
+    with a full RESTFULapi, extending the original functionalities
+    with search, pagination, rate limiting, CORS support
+    and swagger documentation.
     """
 
     def __init__(self) -> None:
@@ -52,6 +48,11 @@ class MasterblogApi(Masterblog):
             default_limits=["100 per minute"],
         )
         init_swagger_ui(self.app)
+
+        self.setup_routes()
+
+    def setup_routes(self) -> None:
+        """Set up the API routes for the Flask app."""
         self.app.add_url_rule(
             "/api/posts",
             view_func=self.get_posts_api,
@@ -61,7 +62,7 @@ class MasterblogApi(Masterblog):
         self.app.add_url_rule(
             "/api/posts/<int:id>",
             view_func=self.delete_post_api,
-            methods=["DElETE"],
+            methods=["DELETE"],
         )
 
         self.app.add_url_rule(
@@ -82,6 +83,7 @@ class MasterblogApi(Masterblog):
             methods=["GET"],
         )
 
+    ### route handlers ###
 
     def get_posts_api(self) -> tuple[Response, int]:
         """Return all blog posts as JSON.
@@ -98,6 +100,9 @@ class MasterblogApi(Masterblog):
             if (
                 not post_data
                 or not isinstance(post_data, dict)
+                or not all(
+                    isinstance(cont, str) for cont in post_data.values()
+                )
                 or not post_data.get("title", "").strip()
                 or not post_data.get("content", "").strip()
                 or not post_data.get("author", "").strip()
@@ -157,12 +162,6 @@ class MasterblogApi(Masterblog):
         except KeyError:
             return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
 
-    def _delete_post(self, post_id: int) -> None:
-        """Delete a blog post by ID."""
-        self._fetch_post_by_id_with_error(post_id)  # raise if none
-
-        super()._del_post(post_id)
-
     def update_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
         """Update a blog post by ID.
 
@@ -174,10 +173,10 @@ class MasterblogApi(Masterblog):
             if (
                 not raw_post_data
                 or not isinstance(raw_post_data, dict)
-                or (
-                    not raw_post_data.get("title", "").strip()
-                    and not raw_post_data.get("content", "").strip()
+                or not all(
+                    isinstance(cont, str) for cont in raw_post_data.values()
                 )
+                or not raw_post_data.get("title", "").strip()
             ):
                 return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 
@@ -218,29 +217,6 @@ class MasterblogApi(Masterblog):
             }), 200
         except KeyError:
             return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
-
-    def _update_post(
-        self,
-        post_id: int,
-        old_post: dict,
-        raw_new_post_data: dict,
-    ) -> dict:
-        """Update a blog post by ID."""
-        # clean empty fields of new post_data for merging.
-        new_post_data = {
-            k: v for k, v in raw_new_post_data.items() if v.strip()
-        }
-
-        new_post_data = {**old_post, **new_post_data}
-
-        return super()._update_post_data(post_id, new_post_data)
-
-    def _fetch_post_by_id_with_error(self, post_id: int) -> dict:
-        """Fetch a blog post by ID or raise an error if not found."""
-        post = self._fetch_post_by_id(post_id)
-        if post is None:
-            raise KeyError(API_ERR_POST_NOT_FOUND)
-        return post
 
     def search_posts_api(self) -> tuple[Response, int]:
         """Search for blog posts by title and/or content.
@@ -283,31 +259,38 @@ class MasterblogApi(Masterblog):
 
         return jsonify(pagination), 200
 
-    @staticmethod
-    def _paginate_posts(posts: list[dict]) -> dict | None:
-        """Return one page of posts with pagination metadata."""
-        try:
-            page = int(request.args.get("page", "1"))
-            per_page = int(
-                request.args.get("per_page", str(API_DEFAULT_PAGE_SIZE)),
-            )
-        except ValueError:
-            return None
+    ### routes logic ###
 
-        if page < 1 or per_page < 1:
-            return None
+    def _delete_post(self, post_id: int) -> None:
+        """Delete a blog post by ID."""
+        self._fetch_post_by_id_with_error(post_id)  # raise if none
 
-        total = len(posts)
-        total_pages = (total + per_page - 1) // per_page
-        start = (page - 1) * per_page
+        super()._del_post(post_id)
 
-        return {
-            "posts": posts[start : start + per_page],
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "total_pages": total_pages,
+    def _update_post(
+        self,
+        post_id: int,
+        old_post: dict,
+        raw_new_post_data: dict,
+    ) -> dict:
+        """Update a blog post by ID."""
+        # clean empty fields of new post_data for merging.
+        new_post_data = {
+            k: v
+            for k, v in raw_new_post_data.items()
+            if k in {"title", "content"} and v.strip()
         }
+
+        new_post_data = {**old_post, **new_post_data}
+
+        return super()._update_post_data(post_id, new_post_data)
+
+    def _fetch_post_by_id_with_error(self, post_id: int) -> dict:
+        """Fetch a blog post by ID or raise an error if not found."""
+        post = self._fetch_post_by_id(post_id)
+        if post is None:
+            raise KeyError(API_ERR_POST_NOT_FOUND)
+        return post
 
     def _search_posts(
         self,
@@ -345,6 +328,32 @@ class MasterblogApi(Masterblog):
             or content_query.lower() in post["content"].lower()  # pyright: ignore[reportOptionalMemberAccess]
         ]
 
+    @staticmethod
+    def _paginate_posts(posts: list[dict]) -> dict | None:
+        """Return one page of posts with pagination metadata."""
+        try:
+            page = int(request.args.get("page", "1"))
+            per_page = int(
+                request.args.get("per_page", str(API_DEFAULT_PAGE_SIZE)),
+            )
+        except ValueError:
+            return None
+
+        if page < 1 or per_page < 1:
+            return None
+
+        total = len(posts)
+        total_pages = (total + per_page - 1) // per_page
+        start = (page - 1) * per_page
+
+        return {
+            "posts": posts[start : start + per_page],
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": total_pages,
+        }
+
 
 if __name__ == "__main__":
-    MasterblogApi().run(debug=True)
+    MasterblogApi().run(host="0.0.0.0", port=5002, debug=True)  # noqa: S104

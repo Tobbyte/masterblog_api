@@ -1,23 +1,18 @@
 [
     {
-        "title": "ich",
+        "title": "cant be empty",
         "author": "asd",
-        "content": "asdasdddddd",
+        "content": "\"correct defaults\"yeah with inline",
         "id": 2,
         "liked_by": [
-            "a5e34673-064e-45f7-b9be-295416958f2e"
+            "a5e34673-064e-45f7-b9be-295416958f2e",
+            "65168ea3-3e6d-49a2-9752-90b85e3a38c2"
         ]
     },
     {
-        "title": "dsa",
-        "author": "asd",
-        "content": "d",
-        "id": 5
-    },
-    {
-        "title": "new title",
+        "title": "new titleasd",
         "author": "fr",
-        "content": "gr",
+        "content": "less merging!",
         "id": 6,
         "liked_by": [
             "65168ea3-3e6d-49a2-9752-90b85e3a38c2"
@@ -28,5 +23,23 @@
         "title": "test",
         "content": "cont",
         "id": 7
+    },
+    {
+        "author": "ich",
+        "title": "test",
+        "content": "test",
+        "id": 1
+    },
+    {
+        "author": "ich",
+        "title": "title",
+        "content": "test",
+        "id": 3
+    },
+    {
+        "author": "bruno",
+        "title": "brune",
+        "content": "via bruno updated",
+        "id": 8
     }
 ]

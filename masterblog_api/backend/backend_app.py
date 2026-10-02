@@ -1,5 +1,11 @@
 """Backend module for the Masterblog application."""
 
+import sys
+from pathlib import Path
+
+# make runnable from wherever.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from flask import jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -352,4 +358,4 @@ class MasterblogApi(Masterblog):
 
 
 if __name__ == "__main__":
-    MasterblogApi().run(debug=True)
+    MasterblogApi().run(host="0.0.0.0", port=5001, debug=True)  # noqa: S104

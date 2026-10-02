@@ -61,7 +61,7 @@ class MasterblogApi(Masterblog):
         self.app.add_url_rule(
             "/api/posts/<int:id>",
             view_func=self.delete_post_api,
-            methods=["DElETE"],
+            methods=["DELETE"],
         )
 
         self.app.add_url_rule(

@@ -7,6 +7,12 @@ the post via the existing put route.
 container thats populated and repeated.
 3: see pagination in backend_app.py and add appropriate pagination button to html and use in main.js
 4: see like_post route in backend_app.py and implement functionality and style like in intex_ssr.html
+
+Known bugs:
+- like-status not set correctly on page load, only after first click.
+- multiline edits are wrapped to single line.
+- content editable fields mostly for fun only.
+- basically, this is a quick hack to get the frontend working with the backend. It needs a proper refactor.
 */
 let currentPage = 1;
 

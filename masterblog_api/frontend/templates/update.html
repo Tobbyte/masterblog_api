@@ -13,11 +13,11 @@
 
     <form class="post-form" action="{{ url_for('update_post', post_id=post['id']) }}" method="POST">
         <label for="title">Title:</label><br>
-        <input type="text" id="title" name="title" value="{{ post['title'] }}"><br>
+        <input type="text" id="title" name="title" value="{{ post['title'] }}" required><br>
         <label for="author">Author:</label><br>
-        <input type="text" id="author" name="author" value="{{ post['author'] }}"><br>
+        <input type="text" id="author" name="author" value="{{ post['author'] }}" required><br>
         <label for="content">Content:</label><br>
-        <input type="text" id="content" name="content" value="{{ post['content'] }}"><br>
+        <textarea id="content" name="content" rows="4" cols="50" required>"{{ post['content'] }}"</textarea>
         <input type="submit" value="Update">
     </form>
     <a href="{{ url_for('index') }}" class="back-link">back to Home page</a>

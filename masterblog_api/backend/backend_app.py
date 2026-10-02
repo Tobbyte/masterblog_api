@@ -40,6 +40,14 @@ class MasterblogApi(Masterblog):
     """A simple Flask app for a blog with API support.
 
     Inherits from Masterblog and adds API routes.
+
+    Apart from two non-breaking changes in the original masterblog app
+    (update and add returns the respective posts), the following class
+    extends the original solely ssr approach with a full RESTFULapi
+    set for managing blog posts, extending it with search, pagination,
+    rate limiting, CORS support and swagger documentation.
+
+
     """
 
     def __init__(self) -> None:

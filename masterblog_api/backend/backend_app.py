@@ -100,7 +100,7 @@ class MasterblogApi(Masterblog):
     ### route handlers ###
 
     def get_posts_api(self) -> tuple[Response, int]:
-        """Return all blog posts as JSON.
+        """Return all blog posts as JSON or adds new post.
 
         Via GET: Returns all posts.
         Via POST: Adds a new post and returns it.

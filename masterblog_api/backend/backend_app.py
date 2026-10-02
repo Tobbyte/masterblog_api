@@ -285,13 +285,6 @@ class MasterblogApi(Masterblog):
 
         return super()._update_post_data(post_id, new_post_data)
 
-    def _fetch_post_by_id_with_error(self, post_id: int) -> dict:
-        """Fetch a blog post by ID or raise an error if not found."""
-        post = self._fetch_post_by_id(post_id)
-        if post is None:
-            raise KeyError(API_ERR_POST_NOT_FOUND)
-        return post
-
     def _search_posts(
         self,
         title_query: str | None = None,

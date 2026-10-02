@@ -15,6 +15,7 @@ from flask import (
 )
 from werkzeug.exceptions import InternalServerError
 
+from masterblog_api.backend.backend_config import API_ERR_POST_NOT_FOUND
 from masterblog_api.blog_store import BlogStore
 from masterblog_api.config import (
     ERR_NO_POST_UID,
@@ -26,7 +27,10 @@ from masterblog_api.config import (
 class Masterblog:
     """A simple Flask app for a blog.
 
-    Allows users to add, update, delete, and like blog posts.
+    This class encapsulates the Flask application and provides methods
+    for managing blog posts, including adding, deleting, updating, and
+    toggling likes.
+    It also handles user sessions and unique identifiers for posts.
     """
 
     def __init__(self) -> None:
@@ -130,6 +134,13 @@ class Masterblog:
             filter(lambda post: post["id"] == post_id, posts),
             None,
         )
+
+    def _fetch_post_by_id_with_error(self, post_id: int) -> dict:
+        """Fetch a blog post by ID or raise an error if not found."""
+        post = self._fetch_post_by_id(post_id)
+        if post is None:
+            raise KeyError(API_ERR_POST_NOT_FOUND)
+        return post
 
     ### routes logic ###
 

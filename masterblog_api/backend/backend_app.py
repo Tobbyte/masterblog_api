@@ -240,10 +240,8 @@ class MasterblogApi(Masterblog):
     def like_post_api(self, post_id: int) -> tuple[Response, int]:
         """Toggle the current user's like for a post."""
         try:
-            self._fetch_post_by_id_with_error(post_id)
             user_uid = self._get_user_uid()
-            self._toggle_like(post_id, user_uid)
-            updated_post = self._fetch_post_by_id_with_error(post_id)
+            updated_post = self._toggle_like(post_id, user_uid)
             likes = updated_post.get(POST_FILED_LIKEDBY, [])
             return jsonify({
                 "id": post_id,

@@ -180,20 +180,25 @@ class Masterblog:
             filter(lambda post: post["id"] == post_id, posts),
         )
 
-    def _toggle_like(self, post_id: int, user_uid: str) -> None:
-        """Toggle the like status for a post by its ID."""
+    def _toggle_like(self, post_id: int, user_uid: str) -> dict:
+        """Toggle the like status and return the updated post."""
         posts_copy = deepcopy(self.blog_store.load())
 
-        for post in posts_copy:
-            if post["id"] == post_id:
-                likes = post.setdefault("liked_by", [])
-                if user_uid in likes:
-                    likes.remove(user_uid)
-                else:
-                    likes.append(user_uid)
-                break
+        updated_post = next(
+            (post for post in posts_copy if post["id"] == post_id),
+            None,
+        )
+        if updated_post is None:
+            raise KeyError(post_id)
+
+        likes = updated_post.setdefault("liked_by", [])
+        if user_uid in likes:
+            likes.remove(user_uid)
+        else:
+            likes.append(user_uid)
 
         self.blog_store.save(posts_copy)
+        return updated_post
 
     ###
 

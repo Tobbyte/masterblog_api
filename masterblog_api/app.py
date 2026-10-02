@@ -7,12 +7,6 @@ import uuid
 from copy import deepcopy
 from typing import Any
 
-from blog_store import BlogStore
-from config import (
-    ERR_NO_POST_UID,
-    ERR_SAVE_POST_UID,
-    UID_FILE_PATH,
-)
 from flask import (
     Flask,
     abort,
@@ -24,6 +18,13 @@ from flask import (
 )
 from werkzeug import Response
 from werkzeug.exceptions import InternalServerError
+
+from masterblog_api.blog_store import BlogStore
+from masterblog_api.config import (
+    ERR_NO_POST_UID,
+    ERR_SAVE_POST_UID,
+    UID_FILE_PATH,
+)
 
 
 class Masterblog:
@@ -37,7 +38,7 @@ class Masterblog:
 
         Sets routes, loads initial data.
         """
-        self.app = Flask(__name__)
+        self.app = Flask(__name__, template_folder="frontend/templates")
 
         self.blog_store = BlogStore()
 
@@ -168,7 +169,7 @@ class Masterblog:
         """Render the index page with blog posts."""
         posts = self.blog_store.load()
         return render_template(
-            "index.html",
+            "index_ssr.html",
             posts=posts,  # refresh
             uuid=self._get_user_uid(),
             blogtitle="Mein Blog",
@@ -213,22 +214,33 @@ class Masterblog:
 
     ### routes logic ###
 
-    def _add_post(self, new_post: dict) -> None:
-        """Add a new blog post."""
+    def _add_post(self, new_post: dict) -> dict:
+        """Add a new blog post.
+
+        Returns the new post with its assigned ID.
+        """
         new_id = self._get_uid()
         new_post["id"] = new_id
         posts_copy = deepcopy(self.blog_store.load())
         posts_copy.append(new_post)
         self.blog_store.save(posts_copy)
+        return new_post
 
-    def _del_post(self, post_id: int) -> None:
+    def _del_post(self, post_id: int) -> dict:
         """Delete a blog post by its ID."""
         posts_copy = deepcopy(self.blog_store.load())
         posts = [post for post in posts_copy if post["id"] != post_id]
         self.blog_store.save(posts)
+        return next(  # not very elegant to filter again, ok for now.
+            filter(lambda post: post["id"] == post_id, posts_copy),
+        )
 
-    def _update_post_data(self, post_id: int, new_post_data: dict) -> None:
-        """Update the data of a blog post by its ID."""
+    def _update_post_data(self, post_id: int, new_post_data: dict) -> dict:
+        """Update the data of a blog post by its ID.
+
+        Expects post_id to exist.
+        Returns the updated post.
+        """
         posts_copy = deepcopy(self.blog_store.load())
 
         # Ensure id cant be changed, f.e. hidden input field in form
@@ -240,7 +252,11 @@ class Masterblog:
             else post_copy
             for post_copy in posts_copy
         ]
+        # TODO: shouldn't I catch here?
         self.blog_store.save(posts)
+        return next(  # not very elegant to filter again, ok for now.
+            filter(lambda post: post["id"] == post_id, posts),
+        )
 
     def _toggle_like(self, post_id: int, user_uid: str) -> None:
         """Toggle the like status for a post by its ID."""

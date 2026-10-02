@@ -2,13 +2,14 @@
 
 import json
 
-from config import (
+from werkzeug.exceptions import InternalServerError
+
+from masterblog_api.config import (
     DB_FILE_PATH,
     ERR_DB_CORRUPT,
     ERR_SAVE_DATA_FAILED,
     UID_FILE_PATH,
 )
-from werkzeug.exceptions import InternalServerError
 
 
 class BlogStore:
@@ -58,6 +59,6 @@ class BlogStore:
         """Save blog posts data."""
         try:
             with DB_FILE_PATH.open("w", encoding="utf-8") as f:
-                f.write(json.dumps(blog_posts))
+                f.write(json.dumps(blog_posts, indent=4, ensure_ascii=False))
         except OSError as e:
             raise InternalServerError(ERR_SAVE_DATA_FAILED) from e

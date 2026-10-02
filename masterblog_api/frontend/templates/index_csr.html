@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Posts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles_csr.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h1>📚 Blog Posts</h1>
+        <div class="input-field">
+            <input type="text" id="api-base-url" placeholder="Enter API Base URL" value="http://127.0.0.1:5002/api">
+            <button onclick="loadPosts()">Load Posts</button>
+        </div>
+        <div class="input-field">
+            <input type="text" id="author" placeholder="Enter Author Name">
+            <input type="text" id="post-title" placeholder="Enter Post Title">
+            <input type="text" id="post-content" placeholder="Enter Post Content">
+            <button onclick="addPost()">Add Post</button>
+        </div>
+        <div id="post-container">
+            <!-- Blog posts will be inserted here by JavaScript -->
+        </div>
+        <nav id="pagination" class="pagination" aria-label="Post pages" hidden>
+            <button type="button" id="previous-page">Previous</button>
+            <span id="page-info"></span>
+            <button type="button" id="next-page">Next</button>
+        </nav>
+<template id="post-template">
+    <article class="post">
+        <h2>
+            <span class="post-author"></span>: <span class="post-title"></span>
+        </h2>
+        <p class="post-content"></p>
+        <div class="post-actions">
+                    <button type="button" class="like-button">❤️</button>
+                    <span class="like-count">0</span>
+            <button type="button" class="delete-button">Delete</button>
+            <button type="button" class="edit-button">Edit</button>
+            <button type="button" class="save-button" hidden>Save</button>
+        </div>
+    </article>
+</template>
+    </div>
+
+    <script src="../static/main.js"></script>
+</body>
+
+</html>

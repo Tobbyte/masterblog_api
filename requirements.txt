@@ -1,1 +1,4 @@
 werkzeug
+flask
+flask_cors
+flask-limiter

@@ -94,58 +94,43 @@ class MasterblogApi(Masterblog):
         Accepts optional query params 'sort' and 'direction' on GET.
         """
         if request.method == "POST":
-            print("via post")
-            post_data = request.get_json(silent=True)
-
-            if (
-                not post_data
-                or not isinstance(post_data, dict)
-                or not all(
-                    isinstance(cont, str) for cont in post_data.values()
-                )
-                or not post_data.get("title", "").strip()
-                or not post_data.get("content", "").strip()
-                or not post_data.get("author", "").strip()
-            ):
-                return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
-
-            new_post = self._add_post(
-                {
-                    "author": post_data["author"],
-                    "title": post_data["title"],
-                    "content": post_data["content"],
-                },
-            )
-            return jsonify(new_post), 201
+            return self._create_post_api()
 
         all_posts = self.blog_store.load()
 
-        sortby_field = request.args.get("sort", "").strip()
-        sort_direction_field = request.args.get("direction", "").strip()
+        sorted_posts = self._sort_posts(all_posts)
+        if sorted_posts is None:
+            return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 
-        if sortby_field:
-            if sortby_field not in {"id", "title", "content"}:
-                return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
-
-            reverse = False
-            if sort_direction_field and sort_direction_field not in {
-                "asc",
-                "desc",
-            }:
-                return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
-
-            reverse = sort_direction_field == "desc"
-
-            all_posts.sort(
-                key=lambda post: (post[sortby_field], post["id"]),
-                reverse=reverse,
-            )
-
-        pagination = self._paginate_posts(all_posts)
+        pagination = self._paginate_posts(sorted_posts)
         if pagination is None:
             return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 
         return jsonify(pagination), 200
+
+    def _create_post_api(self) -> tuple[Response, int]:
+        """Create a blog post from the current request."""
+        post_data = request.get_json(silent=True)
+
+        if (
+            not post_data
+            or not isinstance(post_data, dict)
+            or not all(isinstance(cont, str) for cont in post_data.values())
+            or not post_data.get("title", "").strip()
+            or not post_data.get("content", "").strip()
+            or not post_data.get("author", "").strip()
+        ):
+            return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
+
+        new_post = self._add_post(
+            {
+                "author": post_data["author"],
+                "title": post_data["title"],
+                "content": post_data["content"],
+            },
+        )
+        return jsonify(new_post), 201
+
 
     def delete_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
         """Delete a blog post by ID.
@@ -320,6 +305,34 @@ class MasterblogApi(Masterblog):
             if title_query.lower() in post["title"].lower()  # pyright: ignore[reportOptionalMemberAccess]
             or content_query.lower() in post["content"].lower()  # pyright: ignore[reportOptionalMemberAccess]
         ]
+
+    ### statics ###
+
+    @staticmethod
+    def _sort_posts(posts: list[dict]) -> list[dict] | None:
+        """Sort posts by parameters."""
+        sortby_field = request.args.get("sort", "").strip()
+        sort_direction_field = request.args.get("direction", "").strip()
+
+        if not sortby_field:
+            return posts
+
+        if sortby_field not in {"id", "title", "content"}:
+            return None
+
+        if sort_direction_field and sort_direction_field not in {
+            "asc",
+            "desc",
+        }:
+            return None
+
+        reverse = sort_direction_field == "desc"
+
+        return sorted(
+            posts,
+            key=lambda post: (post[sortby_field], post["id"]),
+            reverse=reverse,
+        )
 
     @staticmethod
     def _paginate_posts(posts: list[dict]) -> dict | None:

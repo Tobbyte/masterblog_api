@@ -3,8 +3,6 @@
 import sys
 from pathlib import Path
 
-from masterblog_api.config import ERR_POST_NOT_FOUND
-
 # make runnable from wherever.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
@@ -41,6 +39,7 @@ from masterblog_api.backend.backend_config import (
     POST_FILED_LIKEDBY,
 )
 from masterblog_api.backend.swagger import init_swagger_ui
+from masterblog_api.config import ERR_POST_NOT_FOUND
 from masterblog_api.masterblog_app import Masterblog
 
 

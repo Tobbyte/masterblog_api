@@ -174,10 +174,10 @@ class MasterblogApi(Masterblog):
             if (
                 not raw_post_data
                 or not isinstance(raw_post_data, dict)
-                or (
-                    not raw_post_data.get("title", "").strip()
-                    and not raw_post_data.get("content", "").strip()
+                or not all(
+                    isinstance(cont, str) for cont in raw_post_data.values()
                 )
+                or not raw_post_data.get("title", "").strip()
             ):
                 return jsonify({"error": API_ERR_INVALID_REQUEST_DATA}), 400
 

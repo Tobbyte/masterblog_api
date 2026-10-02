@@ -44,6 +44,11 @@ class MasterblogApi(Masterblog):
             default_limits=["100 per minute"],
         )
         init_swagger_ui(self.app)
+
+        self.setup_routes()
+
+    def setup_routes(self) -> None:
+        """Set up the API routes for the Flask app."""
         self.app.add_url_rule(
             "/api/posts",
             view_func=self.get_posts_api,
@@ -74,6 +79,7 @@ class MasterblogApi(Masterblog):
             methods=["GET"],
         )
 
+    ### route handlers ###
 
     def get_posts_api(self) -> tuple[Response, int]:
         """Return all blog posts as JSON.
@@ -152,12 +158,6 @@ class MasterblogApi(Masterblog):
         except KeyError:
             return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
 
-    def _delete_post(self, post_id: int) -> None:
-        """Delete a blog post by ID."""
-        self._fetch_post_by_id_with_error(post_id)  # raise if none
-
-        super()._del_post(post_id)
-
     def update_post_api(self, id: int) -> tuple[Response, int]:  # noqa: A002
         """Update a blog post by ID.
 
@@ -214,31 +214,6 @@ class MasterblogApi(Masterblog):
         except KeyError:
             return jsonify({"error": API_ERR_POST_NOT_FOUND}), 404
 
-    def _update_post(
-        self,
-        post_id: int,
-        old_post: dict,
-        raw_new_post_data: dict,
-    ) -> dict:
-        """Update a blog post by ID."""
-        # clean empty fields of new post_data for merging.
-        new_post_data = {
-            k: v
-            for k, v in raw_new_post_data.items()
-            if k in {"title", "content"} and v.strip()
-        }
-
-        new_post_data = {**old_post, **new_post_data}
-
-        return super()._update_post_data(post_id, new_post_data)
-
-    def _fetch_post_by_id_with_error(self, post_id: int) -> dict:
-        """Fetch a blog post by ID or raise an error if not found."""
-        post = self._fetch_post_by_id(post_id)
-        if post is None:
-            raise KeyError(API_ERR_POST_NOT_FOUND)
-        return post
-
     def search_posts_api(self) -> tuple[Response, int]:
         """Search for blog posts by title and/or content.
 
@@ -280,31 +255,38 @@ class MasterblogApi(Masterblog):
 
         return jsonify(pagination), 200
 
-    @staticmethod
-    def _paginate_posts(posts: list[dict]) -> dict | None:
-        """Return one page of posts with pagination metadata."""
-        try:
-            page = int(request.args.get("page", "1"))
-            per_page = int(
-                request.args.get("per_page", str(API_DEFAULT_PAGE_SIZE)),
-            )
-        except ValueError:
-            return None
+    ### routes logic ###
 
-        if page < 1 or per_page < 1:
-            return None
+    def _delete_post(self, post_id: int) -> None:
+        """Delete a blog post by ID."""
+        self._fetch_post_by_id_with_error(post_id)  # raise if none
 
-        total = len(posts)
-        total_pages = (total + per_page - 1) // per_page
-        start = (page - 1) * per_page
+        super()._del_post(post_id)
 
-        return {
-            "posts": posts[start : start + per_page],
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "total_pages": total_pages,
+    def _update_post(
+        self,
+        post_id: int,
+        old_post: dict,
+        raw_new_post_data: dict,
+    ) -> dict:
+        """Update a blog post by ID."""
+        # clean empty fields of new post_data for merging.
+        new_post_data = {
+            k: v
+            for k, v in raw_new_post_data.items()
+            if k in {"title", "content"} and v.strip()
         }
+
+        new_post_data = {**old_post, **new_post_data}
+
+        return super()._update_post_data(post_id, new_post_data)
+
+    def _fetch_post_by_id_with_error(self, post_id: int) -> dict:
+        """Fetch a blog post by ID or raise an error if not found."""
+        post = self._fetch_post_by_id(post_id)
+        if post is None:
+            raise KeyError(API_ERR_POST_NOT_FOUND)
+        return post
 
     def _search_posts(
         self,
@@ -341,6 +323,32 @@ class MasterblogApi(Masterblog):
             if title_query.lower() in post["title"].lower()  # pyright: ignore[reportOptionalMemberAccess]
             or content_query.lower() in post["content"].lower()  # pyright: ignore[reportOptionalMemberAccess]
         ]
+
+    @staticmethod
+    def _paginate_posts(posts: list[dict]) -> dict | None:
+        """Return one page of posts with pagination metadata."""
+        try:
+            page = int(request.args.get("page", "1"))
+            per_page = int(
+                request.args.get("per_page", str(API_DEFAULT_PAGE_SIZE)),
+            )
+        except ValueError:
+            return None
+
+        if page < 1 or per_page < 1:
+            return None
+
+        total = len(posts)
+        total_pages = (total + per_page - 1) // per_page
+        start = (page - 1) * per_page
+
+        return {
+            "posts": posts[start : start + per_page],
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": total_pages,
+        }
 
 
 if __name__ == "__main__":

@@ -75,6 +75,7 @@ class MasterblogApi(Masterblog):
         init_swagger_ui(self.app)
 
         self.setup_routes()
+        self.setup_error_handlers()
 
     def setup_error_handlers(self) -> None:
         """Register JSON error handlers for the API application."""

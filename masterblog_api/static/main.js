@@ -137,11 +137,10 @@ function editPost(postId) {
     }
 
     postDiv.dataset.editing = 'true';
-    const author = postDiv.querySelector('.post-author');
     const title = postDiv.querySelector('.post-title');
     const content = postDiv.querySelector('.post-content');
 
-    [author, title, content].forEach(field => {
+    [title, content].forEach(field => {
         field.contentEditable = 'true';
         field.classList.add('edit-field');
         field.spellcheck = true;

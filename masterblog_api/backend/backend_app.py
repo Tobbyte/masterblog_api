@@ -13,15 +13,19 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug import Response
+from werkzeug.exceptions import HTTPException
 
 from masterblog_api.backend.backend_config import (
     API_DEFAULT_PAGE_SIZE,
     API_DELETE_SUCCESS,
+    API_ERR_404_NOT_FOUND,
     API_ERR_BAD_REQUEST_DATA,
+    API_ERR_INTERNAL_SERVER_ERROR,
     API_ERR_INVALID_POST_ID,
     API_ERR_INVALID_REQUEST_DATA,
     API_ERR_METHOD_NOT_ALLOWED,
     API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
+    API_ERR_TOO_MANY_REQUESTS,
     API_PAGINATION_DEFAULT_PAGE,
     API_PAGINATION_PARAM_PAGE,
     API_PAGINATION_PARAM_PERPAGE,
@@ -71,6 +75,33 @@ class MasterblogApi(Masterblog):
         init_swagger_ui(self.app)
 
         self.setup_routes()
+
+    def setup_error_handlers(self) -> None:
+        """Register JSON error handlers for the API application."""
+        self.app.register_error_handler(404, self.api_page_not_found)
+        self.app.register_error_handler(405, self.api_method_not_allowed)
+        self.app.register_error_handler(429, self.api_too_many_requests)
+        self.app.register_error_handler(500, self.api_internal_server_error)
+
+    @staticmethod
+    def api_page_not_found(_: HTTPException) -> tuple[Response, int]:
+        """Return a JSON response for 404."""
+        return jsonify({"error": API_ERR_404_NOT_FOUND}), 404
+
+    @staticmethod
+    def api_method_not_allowed(_: HTTPException) -> tuple[Response, int]:
+        """Return a JSON response for method forbidden."""
+        return jsonify({"error": API_ERR_METHOD_NOT_ALLOWED}), 405
+
+    @staticmethod
+    def api_too_many_requests(_: HTTPException) -> tuple[Response, int]:
+        """Return JSON for when rate limit is exceeded."""
+        return jsonify({"error": API_ERR_TOO_MANY_REQUESTS}), 429
+
+    @staticmethod
+    def api_internal_server_error(_: Exception) -> tuple[Response, int]:
+        """Return a JSON response for internal API errors."""
+        return jsonify({"error": API_ERR_INTERNAL_SERVER_ERROR}), 500
 
     def setup_routes(self) -> None:
         """Set up the API routes for the Flask app."""
@@ -295,7 +326,7 @@ class MasterblogApi(Masterblog):
         title_query: str | None = None,
         content_query: str | None = None,
         *,
-        match_either: bool | None = False,
+        match_either: bool,
     ) -> list[dict]:
         """Search for blog posts by title and/or content."""
         all_posts = self.blog_store.load()

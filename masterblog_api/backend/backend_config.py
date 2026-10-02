@@ -3,6 +3,10 @@
 API_ERR_INVALID_POST_ID = "Invalid post ID"
 API_ERR_INVALID_REQUEST_DATA = "Invalid request data"
 API_ERR_BAD_REQUEST_DATA = "Bad request"
+API_ERR_TOO_MANY_REQUESTS = "Too many requests"
+API_ERR_INTERNAL_SERVER_ERROR = "Internal server error"
+API_ERR_404_NOT_FOUND = "404 Not found"
+
 API_DELETE_SUCCESS = "Post with id {id} has been deleted successfully."
 API_ERR_METHOD_NOT_ALLOWED = "Method not allowed"
 API_ERR_SEARCH_QUERY_PARAM_REQUIRED = "Query parameter is required"

@@ -54,8 +54,7 @@ class Masterblog:
         # startup (not raise there) and abort per before_request.
         self.app.before_request(self.check_db_health)
 
-        self.app.register_error_handler(404, self.page_not_found)
-        self.app.register_error_handler(500, self.internal_server_error)
+        self.setup_error_handlers()
 
         # load data here (not only in index route) to prevent failing
         # when accessing f.e. /update directly
@@ -73,6 +72,11 @@ class Masterblog:
         self.blog_store.load()  # call fresh to update on the fly
         if self.blog_store.db_error:
             raise InternalServerError
+
+    def setup_error_handlers(self) -> None:
+        """Register err handlers for serving html errors."""
+        self.app.register_error_handler(404, self.page_not_found)
+        self.app.register_error_handler(500, self.internal_server_error)
 
     @staticmethod
     def page_not_found(_) -> tuple:  # noqa: ANN001

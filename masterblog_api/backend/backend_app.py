@@ -98,6 +98,9 @@ class MasterblogApi(Masterblog):
             if (
                 not post_data
                 or not isinstance(post_data, dict)
+                or not all(
+                    isinstance(cont, str) for cont in post_data.values()
+                )
                 or not post_data.get("title", "").strip()
                 or not post_data.get("content", "").strip()
                 or not post_data.get("author", "").strip()

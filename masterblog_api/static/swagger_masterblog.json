@@ -2,36 +2,446 @@
     "swagger": "2.0",
     "info": {
         "title": "Masterblog API",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "description": "JSON API for managing blog posts."
     },
-    "servers": [
-        {
-            "url": "http://localhost:5000"
-        }
+    "host": "localhost:5000",
+    "basePath": "/",
+    "schemes": [
+        "http"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
     ],
     "tags": [
         {
-            "name": "Post",
-            "description": "Post API - CRUD",
-            "paths": {
-                "/api/posts": {
-                    "get": {
-                        "summary": "Returns all posts",
-                        "produces": [
-                            "application/json"
-                        ],
-                        "tags": [
-                            "Post"
-                        ],
-                        "responses": {
-                            "200": {
-                                "description": "Successful operation"
-                            }
+            "name": "Posts",
+            "description": "Create, read, update, delete, search, and like blog posts."
+        }
+    ],
+    "paths": {
+        "/api/posts": {
+            "get": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "List blog posts",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/Page"
+                    },
+                    {
+                        "$ref": "#/parameters/PerPage"
+                    },
+                    {
+                        "$ref": "#/parameters/Sort"
+                    },
+                    {
+                        "$ref": "#/parameters/Direction"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of posts.",
+                        "schema": {
+                            "$ref": "#/definitions/PaginatedPosts"
                         }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Create a blog post",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "post",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NewPost"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The created post.",
+                        "schema": {
+                            "$ref": "#/definitions/Post"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/InvalidRequest"
                     }
                 }
             }
         },
-        {}
-    ]
+        "/api/posts/{id}": {
+            "parameters": [
+                {
+                    "$ref": "#/parameters/PostId"
+                }
+            ],
+            "delete": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Delete a blog post",
+                "responses": {
+                    "200": {
+                        "description": "The post was deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/InvalidPostId"
+                    },
+                    "404": {
+                        "$ref": "#/responses/PostNotFound"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Update a blog post",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "post",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdatePost"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated post.",
+                        "schema": {
+                            "$ref": "#/definitions/UpdatedPost"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/InvalidRequest"
+                    },
+                    "404": {
+                        "$ref": "#/responses/PostNotFound"
+                    }
+                }
+            }
+        },
+        "/api/posts/{id}/like": {
+            "parameters": [
+                {
+                    "$ref": "#/parameters/PostId"
+                }
+            ],
+            "post": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Toggle the current user's like",
+                "responses": {
+                    "200": {
+                        "description": "The updated like state.",
+                        "schema": {
+                            "$ref": "#/definitions/LikeResult"
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/responses/PostNotFound"
+                    }
+                }
+            }
+        },
+        "/api/posts/search": {
+            "get": {
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Search blog posts",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TitleQuery"
+                    },
+                    {
+                        "$ref": "#/parameters/ContentQuery"
+                    },
+                    {
+                        "$ref": "#/parameters/MatchEither"
+                    },
+                    {
+                        "$ref": "#/parameters/Page"
+                    },
+                    {
+                        "$ref": "#/parameters/PerPage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated search results.",
+                        "schema": {
+                            "$ref": "#/definitions/PaginatedPosts"
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/responses/BadRequest"
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {
+        "PostId": {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+        },
+        "Page": {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "format": "int32",
+            "default": 1,
+            "minimum": 1
+        },
+        "PerPage": {
+            "name": "per_page",
+            "in": "query",
+            "type": "integer",
+            "format": "int32",
+            "default": 10,
+            "minimum": 1
+        },
+        "Sort": {
+            "name": "sort",
+            "in": "query",
+            "type": "string",
+            "enum": [
+                "id",
+                "title",
+                "content"
+            ]
+        },
+        "Direction": {
+            "name": "direction",
+            "in": "query",
+            "type": "string",
+            "enum": [
+                "asc",
+                "desc"
+            ]
+        },
+        "TitleQuery": {
+            "name": "title",
+            "in": "query",
+            "type": "string"
+        },
+        "ContentQuery": {
+            "name": "content",
+            "in": "query",
+            "type": "string"
+        },
+        "MatchEither": {
+            "name": "match_either",
+            "in": "query",
+            "type": "boolean",
+            "default": false
+        }
+    },
+    "responses": {
+        "BadRequest": {
+            "description": "The request data or query parameters are invalid.",
+            "schema": {
+                "$ref": "#/definitions/Error"
+            }
+        },
+        "InvalidRequest": {
+            "description": "The request body is invalid.",
+            "schema": {
+                "$ref": "#/definitions/Error"
+            }
+        },
+        "InvalidPostId": {
+            "description": "The post ID is invalid.",
+            "schema": {
+                "$ref": "#/definitions/Error"
+            }
+        },
+        "PostNotFound": {
+            "description": "The post was not found.",
+            "schema": {
+                "$ref": "#/definitions/Error"
+            }
+        }
+    },
+    "definitions": {
+        "Post": {
+            "type": "object",
+            "required": [
+                "id",
+                "author",
+                "title",
+                "content"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "author": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "liked_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "NewPost": {
+            "type": "object",
+            "required": [
+                "author",
+                "title",
+                "content"
+            ],
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdatePost": {
+            "type": "object",
+            "minProperties": 1,
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdatedPost": {
+            "type": "object",
+            "required": [
+                "id",
+                "title",
+                "content"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                }
+            }
+        },
+        "PaginatedPosts": {
+            "type": "object",
+            "required": [
+                "posts",
+                "page",
+                "per_page",
+                "total",
+                "total_pages"
+            ],
+            "properties": {
+                "posts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Post"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "LikeResult": {
+            "type": "object",
+            "required": [
+                "id",
+                "liked",
+                "like_count"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "liked": {
+                    "type": "boolean"
+                },
+                "like_count": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "Message": {
+            "type": "object",
+            "required": [
+                "message"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "Error": {
+            "type": "object",
+            "required": [
+                "error"
+            ],
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        }
+    }
 }

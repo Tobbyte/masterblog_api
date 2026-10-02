@@ -12,7 +12,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug import Response
 
-from masterblog_api.app import Masterblog
 from masterblog_api.backend.backend_config import (
     API_DEFAULT_PAGE_SIZE,
     API_DELETE_SUCCESS,
@@ -24,6 +23,7 @@ from masterblog_api.backend.backend_config import (
     API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
 )
 from masterblog_api.backend.swagger import init_swagger_ui
+from masterblog_api.masterblog_app import Masterblog
 
 
 class MasterblogApi(Masterblog):
@@ -31,13 +31,11 @@ class MasterblogApi(Masterblog):
 
     Inherits from Masterblog and adds API routes.
 
-    Apart from two non-breaking changes in the original masterblog app
-    (update and add returns the respective posts), the following class
-    extends the original solely ssr approach with a full RESTFULapi
-    set for managing blog posts, extending it with search, pagination,
-    rate limiting, CORS support and swagger documentation.
-
-
+    Apart from the original Masterblog class being refactored into a shared
+    and a sole ssr class, the following class extends the original
+    with a full RESTFULapi, extending the original functionalities
+    with search, pagination, rate limiting, CORS support
+    and swagger documentation.
     """
 
     def __init__(self) -> None:

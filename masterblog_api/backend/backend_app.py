@@ -16,31 +16,39 @@ from werkzeug.exceptions import HTTPException
 from masterblog_api.backend.backend_config import (
     API_DELETE_SUCCESS,
     API_ERR_404_NOT_FOUND,
-    API_ERR_BAD_REQUEST_DATA,
     API_ERR_INTERNAL_SERVER_ERROR,
     API_ERR_INVALID_POST_ID,
     API_ERR_INVALID_REQUEST_DATA,
     API_ERR_METHOD_NOT_ALLOWED,
     API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
     API_ERR_TOO_MANY_REQUESTS,
-    API_PAGINATION_DEFAULT_PAGE,
     API_PAGINATION_DEFAULT_PAGE_SIZE,
+    API_PAGINATION_MAX_PAGE_SIZE,
     API_PAGINATION_PARAM_PAGE,
     API_PAGINATION_PARAM_PERPAGE,
     API_SEARCH_PARAM_MATCHEITHER,
     API_SEARCH_PARAM_MATCHEITHER_VALIDS,
     API_SEARCH_QUERYABLE_FIELDS,
+    API_SORT_DIRECTION_PARAM,
+    API_SORT_PARAM,
+    API_SORT_PARAM_ASC,
     API_SORT_PARAM_DESC,
-    API_SORT_SORTABLE_FIELDS,
+    LIST_PARAMS,
     POST_FIELD_AUTHOR,
     POST_FIELD_CONTENT,
     POST_FIELD_ID,
     POST_FIELD_TITLE,
     POST_FILED_LIKEDBY,
+    SEARCH_PARAMS,
+    VALID_VALUES,
 )
 from masterblog_api.backend.swagger import init_swagger_ui
 from masterblog_api.config import ERR_POST_NOT_FOUND
 from masterblog_api.masterblog_app import Masterblog
+
+
+class InvalidParamError(Exception):
+    """A query parameter is unknown or has an invalid value."""
 
 
 class MasterblogApi(Masterblog):
@@ -59,7 +67,6 @@ class MasterblogApi(Masterblog):
     exception class.
     - routes like f.e. update_post_api expect all fields as str. Simply
     ignoring mis-formatted, unneeded fields would be more friendly.
-    - search results ignore sorting params.
     """
 
     def __init__(self) -> None:
@@ -82,6 +89,10 @@ class MasterblogApi(Masterblog):
         self.app.register_error_handler(405, self.api_method_not_allowed)
         self.app.register_error_handler(429, self.api_too_many_requests)
         self.app.register_error_handler(500, self.api_internal_server_error)
+        self.app.register_error_handler(
+            InvalidParamError,
+            self.api_invalid_params,
+        )
 
     @staticmethod
     def api_page_not_found(_: HTTPException) -> tuple[Response, int]:
@@ -102,6 +113,11 @@ class MasterblogApi(Masterblog):
     def api_internal_server_error(_: Exception) -> tuple[Response, int]:
         """Return a JSON response for internal API errors."""
         return jsonify({"error": API_ERR_INTERNAL_SERVER_ERROR}), 500
+
+    @staticmethod
+    def api_invalid_params(error: InvalidParamError) -> tuple[Response, int]:
+        """Return a JSON 400 naming the invalid parameter."""
+        return jsonify({"error": str(error)}), 400
 
     def setup_routes(self) -> None:
         """Set up the API routes for the Flask app."""
@@ -143,20 +159,17 @@ class MasterblogApi(Masterblog):
         Via GET: Returns all posts.
         Via POST: Adds a new post and returns it.
 
-        Accepts optional query params 'sort' and 'direction' on GET.
+        Accepts optional query params defined by LIST_PARAMS.
         """
         if request.method == "POST":
             return self._create_post_api()
 
-        all_posts = self.blog_store.load()  # load here to keep sorting static
-        sorted_posts = self._sort_posts(all_posts, request.args)
+        # catch all invalid params, so save to assume what is is save
+        self.validate_params(request.args, LIST_PARAMS)
 
-        if sorted_posts is not None:
-            pagination = self._paginate_posts(sorted_posts, request.args)
-            if pagination is not None:
-                return jsonify(pagination), 200
-
-        return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
+        posts = self.blog_store.load()
+        posts = self._sort_posts(posts, request.args)
+        return jsonify(self._paginate_posts(posts, request.args)), 200
 
     def _create_post_api(self) -> tuple[Response, int]:
         """Create a blog post from the current request."""
@@ -251,31 +264,23 @@ class MasterblogApi(Masterblog):
     def search_posts_api(self) -> tuple[Response, int]:
         """Search for blog posts by title and/or content.
 
-        Accepts query parameters:
-        - title: The title to search for (optional).
-        - content: The content to search for (optional).
+        Accepts query parameters as defined by SEARCH_PARAMS
         - match_either: If "true", matches posts that contain either
-          the title or content (default: False). Ignored if only one of
-          title or content is provided.
-        - ignores invalid query parameters
+          the title or content (default: False).
         """
-        if not request.args:
-            return jsonify({"error": API_ERR_SEARCH_QUERY_PARAM_REQUIRED}), 400
+        # catch all invalid params, so save to assume what is is save
+        self.validate_params(request.args, SEARCH_PARAMS)
+
+        if not any(f in request.args for f in API_SEARCH_QUERYABLE_FIELDS):
+            raise InvalidParamError(API_ERR_SEARCH_QUERY_PARAM_REQUIRED)
 
         all_posts = self.blog_store.load()  # load here to keep sorting static
-
         matching_posts = self._search_posts(all_posts, request.args)
+        sorted_matching_posts = self._sort_posts(matching_posts, request.args)
 
-        if matching_posts is None:
-            return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
-
-        pagination = self._paginate_posts(matching_posts, request.args)
-
-        # TODO: bad paginatino fails searching.
-        if pagination is None:
-            return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
-
-        return jsonify(pagination), 200
+        return jsonify(
+            self._paginate_posts(sorted_matching_posts, request.args),
+        ), 200
 
     ### routes logic ###
 
@@ -301,24 +306,56 @@ class MasterblogApi(Masterblog):
         return super()._update_post_data(post_id, new_post_data)
 
     @staticmethod
+    def validate_params(
+        args: dict,
+        allowed_params: list[str],
+    ) -> None:
+        """Raise InvalidParamError if any param or value is invalid."""
+        for name, value in args.items():
+            if name not in allowed_params:
+                msg = f"Unknown parameter '{name}'. Allowed: {', '.join(allowed_params)}"
+                raise InvalidParamError(msg)
+
+            if name in VALID_VALUES and value not in VALID_VALUES[name]:
+                msg = f"Invalid value for '{name}'. Allowed: {', '.join(VALID_VALUES[name])}"
+                raise InvalidParamError(msg)
+
+            if name in (
+                API_PAGINATION_PARAM_PAGE,
+                API_PAGINATION_PARAM_PERPAGE,
+            ) and not (value.isdecimal() and int(value) >= 1):
+                msg = f"Invalid value for '{name}': must be int > 0"
+                raise InvalidParamError(msg)
+
+            if (
+                name == API_PAGINATION_PARAM_PERPAGE
+                and int(value) > API_PAGINATION_MAX_PAGE_SIZE
+            ):
+                msg = f"Invalid value for '{name}': must be <= {API_PAGINATION_MAX_PAGE_SIZE}"
+                raise InvalidParamError(msg)
+
+            if name in API_SEARCH_QUERYABLE_FIELDS and not value.strip():
+                msg = f"Invalid value for '{name}': must not be empty"
+                raise InvalidParamError(msg)
+
+    @staticmethod
     def _search_posts(
         posts: list[dict],
         search_args: dict,
-    ) -> list[dict] | None:
-        """Search for blog posts by title and/or content."""
+    ) -> list[dict]:
+        """Search for blog posts.
+
+        Expects valid args.
+        """
         search_query = {  # {where:what}, eg {"content":"hurtz"}
-            k: v.lower()
+            k: v
             for k, v in search_args.items()
-            if k in API_SEARCH_QUERYABLE_FIELDS and v.strip()
+            if k in API_SEARCH_QUERYABLE_FIELDS
         }
 
-        if not search_query:
-            # bad request, no params (excl. match_either)
-            return None
-
+        # map match_either param "true"/"false" to bool
         match_either = API_SEARCH_PARAM_MATCHEITHER_VALIDS.get(
-            search_args.get(API_SEARCH_PARAM_MATCHEITHER, "").strip(),
-            False,
+            search_args.get(API_SEARCH_PARAM_MATCHEITHER, "false"),
         )
 
         any_or_all = any if match_either else all
@@ -327,29 +364,28 @@ class MasterblogApi(Masterblog):
             post
             for post in posts
             if any_or_all(
-                q.strip() in post[f].lower() for f, q in search_query.items()
+                q.strip().lower() in post[f].lower()
+                for f, q in search_query.items()
             )
         ]
 
     ### statics ###
 
     @staticmethod
-    def _sort_posts(posts: list[dict], sort_args: dict) -> list[dict] | None:
+    def _sort_posts(posts: list[dict], sort_args: dict) -> list[dict]:
         """Sort posts by parameters.
 
         Sorts ascending by default, breaks tie on id.
-        Ignores invalid parameters.
+        Expects valid args.
         """
-        sortby_field = sort_args.get("sort", "").strip()
-        sort_direction_field = sort_args.get("direction", "").strip()
-
+        sortby_field = sort_args.get(API_SORT_PARAM)
         if not sortby_field:
             return posts
 
-        if sortby_field not in API_SORT_SORTABLE_FIELDS:
-            # bad request (ignoring direction)
-            return None
-
+        sort_direction_field = sort_args.get(
+            API_SORT_DIRECTION_PARAM,
+            API_SORT_PARAM_ASC,
+        )
         reverse = sort_direction_field == API_SORT_PARAM_DESC
 
         return sorted(
@@ -359,26 +395,18 @@ class MasterblogApi(Masterblog):
         )
 
     @staticmethod
-    def _paginate_posts(posts: list[dict], args: dict) -> dict | None:
-        """Return one page of posts with pagination metadata."""
-        try:
-            page = int(
-                args.get(
-                    API_PAGINATION_PARAM_PAGE,
-                    API_PAGINATION_DEFAULT_PAGE,
-                ),
-            )
-            per_page = int(
-                args.get(
-                    API_PAGINATION_PARAM_PERPAGE,
-                    str(API_PAGINATION_DEFAULT_PAGE_SIZE),
-                ),
-            )
-        except ValueError:
-            return None
+    def _paginate_posts(posts: list[dict], args: dict) -> dict:
+        """Return one page of posts with pagination metadata.
 
-        if page < 1 or per_page < 1:
-            return None
+        Expects valid args.
+        """
+        page = int(args.get(API_PAGINATION_PARAM_PAGE, 1))  # 1 for linter
+        per_page = int(
+            args.get(
+                API_PAGINATION_PARAM_PERPAGE,
+                API_PAGINATION_DEFAULT_PAGE_SIZE,
+            ),
+        )
 
         total = len(posts)
         total_pages = (total + per_page - 1) // per_page

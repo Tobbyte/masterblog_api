@@ -334,14 +334,14 @@ class MasterblogApi(Masterblog):
     ### statics ###
 
     @staticmethod
-    def _sort_posts(posts: list[dict], search_args: dict) -> list[dict] | None:
+    def _sort_posts(posts: list[dict], sort_args: dict) -> list[dict] | None:
         """Sort posts by parameters.
 
         Sorts ascending by default, breaks tie on id.
         Ignores invalid parameters.
         """
-        sortby_field = search_args.get("sort", "").strip()
-        sort_direction_field = search_args.get("direction", "").strip()
+        sortby_field = sort_args.get("sort", "").strip()
+        sort_direction_field = sort_args.get("direction", "").strip()
 
         if not sortby_field:
             # bad request (ignoring direction)

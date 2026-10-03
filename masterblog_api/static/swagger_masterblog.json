@@ -5,7 +5,6 @@
         "version": "1.0.0",
         "description": "JSON API for managing blog posts."
     },
-    "host": "localhost:5000",
     "basePath": "/",
     "schemes": [
         "http"
@@ -29,6 +28,7 @@
                     "Posts"
                 ],
                 "summary": "List blog posts",
+                "description": "Returns posts, optionally sorted, in pages. Unknown parameters (including the search parameters) and invalid values return 400.",
                 "parameters": [
                     {
                         "$ref": "#/parameters/Page"
@@ -114,6 +114,7 @@
                     "Posts"
                 ],
                 "summary": "Update a blog post",
+                "description": "Updates title and/or content. Empty values and all other fields are ignored. A body without a usable title or content changes nothing and returns the post's current values.",
                 "parameters": [
                     {
                         "in": "body",
@@ -170,6 +171,7 @@
                     "Posts"
                 ],
                 "summary": "Search blog posts",
+                "description": "Case-insensitive substring search in title and/or content. At least one of title or content is required. Results can be sorted and are paginated like the post list. Unknown parameters and invalid values return 400.",
                 "parameters": [
                     {
                         "$ref": "#/parameters/TitleQuery"
@@ -181,6 +183,12 @@
                         "$ref": "#/parameters/MatchEither"
                     },
                     {
+                        "$ref": "#/parameters/Sort"
+                    },
+                    {
+                        "$ref": "#/parameters/Direction"
+                    },
+                    {
                         "$ref": "#/parameters/Page"
                     },
                     {
@@ -189,13 +197,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated search results.",
+                        "description": "Sorted and paginated search results.",
                         "schema": {
                             "$ref": "#/definitions/PaginatedPosts"
                         }
                     },
                     "400": {
-                        "$ref": "#/responses/BadRequest"
+                        "description": "A query parameter is unknown or has an invalid value, or neither title nor content was given.",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
                     }
                 }
             }
@@ -213,6 +224,7 @@
         "Page": {
             "name": "page",
             "in": "query",
+            "description": "Page number (whole number, at least 1).",
             "type": "integer",
             "format": "int32",
             "default": 1,
@@ -221,14 +233,16 @@
         "PerPage": {
             "name": "per_page",
             "in": "query",
+            "description": "Posts per page (whole number, at least 1, at most the configured maximum).",
             "type": "integer",
             "format": "int32",
             "default": 10,
-            "minimum": 1
+            "minimum": 100
         },
         "Sort": {
             "name": "sort",
             "in": "query",
+            "description": "Field to sort by. Without it, posts are returned in storage order. Ties are broken by id.",
             "type": "string",
             "enum": [
                 "id",
@@ -239,6 +253,7 @@
         "Direction": {
             "name": "direction",
             "in": "query",
+            "description": "Sort direction (default: asc). Only used together with sort, otherwise ignored.",
             "type": "string",
             "enum": [
                 "asc",
@@ -248,25 +263,35 @@
         "TitleQuery": {
             "name": "title",
             "in": "query",
-            "type": "string"
+            "description": "Text to search for in the title (case-insensitive). Must not be blank.",
+            "type": "string",
+            "minLength": 1
         },
         "ContentQuery": {
             "name": "content",
             "in": "query",
-            "type": "string"
+            "description": "Text to search for in the content (case-insensitive). Must not be blank.",
+            "type": "string",
+            "minLength": 1
         },
         "MatchEither": {
             "name": "match_either",
             "in": "query",
+            "description": "true: title or content must match. false: both must match. Only relevant if both title and content are given.",
             "type": "boolean",
             "default": false
         }
     },
     "responses": {
         "BadRequest": {
-            "description": "The request data or query parameters are invalid.",
+            "description": "A query parameter is unknown or has an invalid value. The message names the parameter.",
             "schema": {
                 "$ref": "#/definitions/Error"
+            },
+            "examples": {
+                "application/json": {
+                    "error": "Invalid value for 'direction'. Allowed: asc, desc"
+                }
             }
         },
         "InvalidRequest": {

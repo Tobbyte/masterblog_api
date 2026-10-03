@@ -271,6 +271,7 @@ class MasterblogApi(Masterblog):
 
         pagination = self._paginate_posts(matching_posts)
 
+        # TODO: bad paginatino fails searching.
         if pagination is None:
             return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 

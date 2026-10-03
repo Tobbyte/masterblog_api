@@ -27,11 +27,11 @@ from masterblog_api.backend.backend_config import (
     API_PAGINATION_DEFAULT_PAGE,
     API_PAGINATION_PARAM_PAGE,
     API_PAGINATION_PARAM_PERPAGE,
+    API_SEARCH_PARAM_MATCHEITHER,
+    API_SEARCH_PARAM_MATCHEITHER_VALIDS,
+    API_SEARCH_QUERYABLE_FIELDS,
     API_SORT_PARAM_ASC,
     API_SORT_PARAM_DESC,
-    API_SORT_PARAM_MATCHEITHER,
-    API_SORT_PARAM_MATCHEITHER_FALSE,
-    API_SORT_PARAM_MATCHEITHER_TRUE,
     POST_FIELD_AUTHOR,
     POST_FIELD_CONTENT,
     POST_FIELD_ID,
@@ -259,33 +259,18 @@ class MasterblogApi(Masterblog):
         - match_either: If "true", matches posts that contain either
           the title or content (default: False). Ignored if only one of
           title or content is provided.
+        - ignores invalid query parameters
         """
-        title_query = request.args.get(POST_FIELD_TITLE, "").strip()
-        content_query = request.args.get(POST_FIELD_CONTENT, "").strip()
-
-        if not title_query and not content_query:
+        if not request.args:
             return jsonify({"error": API_ERR_SEARCH_QUERY_PARAM_REQUIRED}), 400
 
-        match_either = request.args.get(API_SORT_PARAM_MATCHEITHER)
+        matching_posts = self._search_posts(request.args)
 
-        if match_either:
-            match_either = match_either.lower().strip()
-            if match_either not in {
-                API_SORT_PARAM_MATCHEITHER_TRUE,
-                API_SORT_PARAM_MATCHEITHER_FALSE,
-            }:
-                return jsonify({
-                    "error": API_ERR_BAD_REQUEST_DATA,
-                }), 400
+        if matching_posts is None:
+            return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 
-            match_either = match_either == API_SORT_PARAM_MATCHEITHER_TRUE
-
-        matching_posts = self._search_posts(
-            title_query,
-            content_query,
-            match_either=match_either,  # pyright: ignore[reportArgumentType]
-        )
         pagination = self._paginate_posts(matching_posts)
+
         if pagination is None:
             return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 
@@ -316,29 +301,34 @@ class MasterblogApi(Masterblog):
 
     def _search_posts(
         self,
-        title_query: str | None = None,
-        content_query: str | None = None,
-        *,
-        match_either: bool,
-    ) -> list[dict]:
+        search_args: dict,
+    ) -> list[dict] | None:
         """Search for blog posts by title and/or content."""
         all_posts = self.blog_store.load()
 
-        queries = [
-            (q.lower(), f)
-            for q, f in [
-                (title_query, POST_FIELD_TITLE),
-                (content_query, POST_FIELD_CONTENT),
-            ]
-            if q
-        ]
+        search_query = {  # {where:what}, eg {"content":"hurtz"}
+            k: v
+            for k, v in search_args.items()
+            if k in API_SEARCH_QUERYABLE_FIELDS and v.strip()
+        }
+
+        if not search_query:
+            # no params (excl. match_either)
+            return None
+
+        match_either = API_SEARCH_PARAM_MATCHEITHER_VALIDS.get(
+            search_args.get(API_SEARCH_PARAM_MATCHEITHER, "").strip(),
+            False,
+        )
 
         any_or_all = any if match_either else all
 
         return [
             post
             for post in all_posts
-            if any_or_all(q in post[f].lower() for q, f in queries)
+            if any_or_all(
+                q in post[f].lower() for f, q in search_query.items()
+            )
         ]
 
     ### statics ###

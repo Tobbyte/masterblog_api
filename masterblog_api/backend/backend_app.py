@@ -152,7 +152,7 @@ class MasterblogApi(Masterblog):
         sorted_posts = self._sort_posts(all_posts, request.args)
 
         if sorted_posts is not None:
-            pagination = self._paginate_posts(sorted_posts)
+            pagination = self._paginate_posts(sorted_posts, request.args)
             if pagination is not None:
                 return jsonify(pagination), 200
 
@@ -269,7 +269,7 @@ class MasterblogApi(Masterblog):
         if matching_posts is None:
             return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 
-        pagination = self._paginate_posts(matching_posts)
+        pagination = self._paginate_posts(matching_posts, request.args)
 
         # TODO: bad paginatino fails searching.
         if pagination is None:
@@ -359,17 +359,17 @@ class MasterblogApi(Masterblog):
         )
 
     @staticmethod
-    def _paginate_posts(posts: list[dict]) -> dict | None:
+    def _paginate_posts(posts: list[dict], args: dict) -> dict | None:
         """Return one page of posts with pagination metadata."""
         try:
             page = int(
-                request.args.get(
+                args.get(
                     API_PAGINATION_PARAM_PAGE,
                     API_PAGINATION_DEFAULT_PAGE,
                 ),
             )
             per_page = int(
-                request.args.get(
+                args.get(
                     API_PAGINATION_PARAM_PERPAGE,
                     str(API_PAGINATION_DEFAULT_PAGE_SIZE),
                 ),

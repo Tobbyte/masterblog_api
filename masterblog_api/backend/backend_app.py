@@ -307,7 +307,7 @@ class MasterblogApi(Masterblog):
     ) -> list[dict] | None:
         """Search for blog posts by title and/or content."""
         search_query = {  # {where:what}, eg {"content":"hurtz"}
-            k: v
+            k: v.lower()
             for k, v in search_args.items()
             if k in API_SEARCH_QUERYABLE_FIELDS and v.strip()
         }

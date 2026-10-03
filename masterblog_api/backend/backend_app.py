@@ -1,5 +1,5 @@
+# pylint: disable=wrong-import-position
 """Backend module for the Masterblog application."""
-
 import sys
 from pathlib import Path
 
@@ -185,7 +185,7 @@ class MasterblogApi(Masterblog):
         post_data = request.get_json(silent=True)
 
         if (
-            not post_data
+            not post_data  # pylint: disable=too-many-boolean-expressions
             or not isinstance(post_data, dict)
             or not all(isinstance(cont, str) for cont in post_data.values())
             or not post_data.get(POST_FIELD_TITLE, "").strip()

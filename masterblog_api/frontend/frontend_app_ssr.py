@@ -1,3 +1,4 @@
+# pylint: disable=wrong-import-position
 """Server-side rendered frontend for the Masterblog application."""
 
 import sys

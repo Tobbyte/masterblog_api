@@ -30,8 +30,8 @@ from masterblog_api.backend.backend_config import (
     API_SEARCH_PARAM_MATCHEITHER,
     API_SEARCH_PARAM_MATCHEITHER_VALIDS,
     API_SEARCH_QUERYABLE_FIELDS,
-    API_SORT_PARAM_ASC,
     API_SORT_PARAM_DESC,
+    API_SORT_SORTABLE_FIELDS,
     POST_FIELD_AUTHOR,
     POST_FIELD_CONTENT,
     POST_FIELD_ID,
@@ -148,17 +148,15 @@ class MasterblogApi(Masterblog):
         if request.method == "POST":
             return self._create_post_api()
 
-        all_posts = self.blog_store.load()
+        all_posts = self.blog_store.load()  # load here to keep sorting static
+        sorted_posts = self._sort_posts(all_posts, request.args)
 
-        sorted_posts = self._sort_posts(all_posts)
-        if sorted_posts is None:
-            return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
+        if sorted_posts is not None:
+            pagination = self._paginate_posts(sorted_posts)
+            if pagination is not None:
+                return jsonify(pagination), 200
 
-        pagination = self._paginate_posts(sorted_posts)
-        if pagination is None:
-            return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
-
-        return jsonify(pagination), 200
+        return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
 
     def _create_post_api(self) -> tuple[Response, int]:
         """Create a blog post from the current request."""
@@ -334,25 +332,19 @@ class MasterblogApi(Masterblog):
     ### statics ###
 
     @staticmethod
-    def _sort_posts(posts: list[dict]) -> list[dict] | None:
-        """Sort posts by parameters."""
-        sortby_field = request.args.get("sort", "").strip()
-        sort_direction_field = request.args.get("direction", "").strip()
+    def _sort_posts(posts: list[dict], search_args: dict) -> list[dict] | None:
+        """Sort posts by parameters.
+
+        Sorts ascending by default, breaks tie on id.
+        Ignores invalid parameters.
+        """
+        sortby_field = search_args.get("sort", "").strip()
+        sort_direction_field = search_args.get("direction", "").strip()
 
         if not sortby_field:
             return posts
 
-        if sortby_field not in {
-            POST_FIELD_ID,
-            POST_FIELD_TITLE,
-            POST_FIELD_CONTENT,
-        }:
-            return None
-
-        if sort_direction_field and sort_direction_field not in {
-            API_SORT_PARAM_ASC,
-            API_SORT_PARAM_DESC,
-        }:
+        if sortby_field not in API_SORT_SORTABLE_FIELDS:
             return None
 
         reverse = sort_direction_field == API_SORT_PARAM_DESC

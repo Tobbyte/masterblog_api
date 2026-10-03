@@ -344,10 +344,10 @@ class MasterblogApi(Masterblog):
         sort_direction_field = sort_args.get("direction", "").strip()
 
         if not sortby_field:
-            # bad request (ignoring direction)
             return posts
 
         if sortby_field not in API_SORT_SORTABLE_FIELDS:
+            # bad request (ignoring direction)
             return None
 
         reverse = sort_direction_field == API_SORT_PARAM_DESC

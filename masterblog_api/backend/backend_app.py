@@ -262,7 +262,9 @@ class MasterblogApi(Masterblog):
         if not request.args:
             return jsonify({"error": API_ERR_SEARCH_QUERY_PARAM_REQUIRED}), 400
 
-        matching_posts = self._search_posts(request.args)
+        all_posts = self.blog_store.load()  # load here to keep sorting static
+
+        matching_posts = self._search_posts(all_posts, request.args)
 
         if matching_posts is None:
             return jsonify({"error": API_ERR_BAD_REQUEST_DATA}), 400
@@ -297,13 +299,12 @@ class MasterblogApi(Masterblog):
 
         return super()._update_post_data(post_id, new_post_data)
 
+    @staticmethod
     def _search_posts(
-        self,
+        posts: list[dict],
         search_args: dict,
     ) -> list[dict] | None:
         """Search for blog posts by title and/or content."""
-        all_posts = self.blog_store.load()
-
         search_query = {  # {where:what}, eg {"content":"hurtz"}
             k: v
             for k, v in search_args.items()
@@ -311,7 +312,7 @@ class MasterblogApi(Masterblog):
         }
 
         if not search_query:
-            # no params (excl. match_either)
+            # bad request, no params (excl. match_either)
             return None
 
         match_either = API_SEARCH_PARAM_MATCHEITHER_VALIDS.get(
@@ -323,7 +324,7 @@ class MasterblogApi(Masterblog):
 
         return [
             post
-            for post in all_posts
+            for post in posts
             if any_or_all(
                 q in post[f].lower() for f, q in search_query.items()
             )

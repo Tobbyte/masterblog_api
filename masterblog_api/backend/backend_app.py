@@ -327,7 +327,7 @@ class MasterblogApi(Masterblog):
             post
             for post in posts
             if any_or_all(
-                q in post[f].lower() for f, q in search_query.items()
+                q.strip() in post[f].lower() for f, q in search_query.items()
             )
         ]
 

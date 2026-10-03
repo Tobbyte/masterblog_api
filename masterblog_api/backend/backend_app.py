@@ -14,7 +14,6 @@ from werkzeug import Response
 from werkzeug.exceptions import HTTPException
 
 from masterblog_api.backend.backend_config import (
-    API_DEFAULT_PAGE_SIZE,
     API_DELETE_SUCCESS,
     API_ERR_404_NOT_FOUND,
     API_ERR_BAD_REQUEST_DATA,
@@ -25,6 +24,7 @@ from masterblog_api.backend.backend_config import (
     API_ERR_SEARCH_QUERY_PARAM_REQUIRED,
     API_ERR_TOO_MANY_REQUESTS,
     API_PAGINATION_DEFAULT_PAGE,
+    API_PAGINATION_DEFAULT_PAGE_SIZE,
     API_PAGINATION_PARAM_PAGE,
     API_PAGINATION_PARAM_PERPAGE,
     API_SEARCH_PARAM_MATCHEITHER,
@@ -369,7 +369,7 @@ class MasterblogApi(Masterblog):
             per_page = int(
                 request.args.get(
                     API_PAGINATION_PARAM_PERPAGE,
-                    str(API_DEFAULT_PAGE_SIZE),
+                    str(API_PAGINATION_DEFAULT_PAGE_SIZE),
                 ),
             )
         except ValueError:

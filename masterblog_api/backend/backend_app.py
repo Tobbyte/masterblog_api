@@ -26,7 +26,16 @@ from masterblog_api.backend.backend_config import (
     API_PAGINATION_MAX_PAGE_SIZE,
     API_PAGINATION_PARAM_PAGE,
     API_PAGINATION_PARAM_PERPAGE,
+    API_PAGINATION_RETURN_POSTS,
+    API_PAGINATION_RETURN_TOTAL,
+    API_PAGINATION_RETURN_TOTAL_PAGES,
+    API_PARAM_VALIDATION_ERR_INT_EXCEED_MAX_PAGE_SIZE,
+    API_PARAM_VALIDATION_ERR_INVAL_VALUE,
+    API_PARAM_VALIDATION_ERR_NO_INT,
+    API_PARAM_VALIDATION_ERR_UNKNOWN,
+    API_PARAM_VALIDATION_ERR_VALUE_EMPTY,
     API_SEARCH_PARAM_MATCHEITHER,
+    API_SEARCH_PARAM_MATCHEITHER_FALSE,
     API_SEARCH_PARAM_MATCHEITHER_VALIDS,
     API_SEARCH_QUERYABLE_FIELDS,
     API_SORT_DIRECTION_PARAM,
@@ -313,29 +322,32 @@ class MasterblogApi(Masterblog):
         """Raise InvalidParamError if any param or value is invalid."""
         for name, value in args.items():
             if name not in allowed_params:
-                msg = f"Unknown parameter '{name}'. Allowed: {', '.join(allowed_params)}"
+                msg = API_PARAM_VALIDATION_ERR_UNKNOWN.format(name=name)
                 raise InvalidParamError(msg)
 
             if name in VALID_VALUES and value not in VALID_VALUES[name]:
-                msg = f"Invalid value for '{name}'. Allowed: {', '.join(VALID_VALUES[name])}"
+                msg = API_PARAM_VALIDATION_ERR_INVAL_VALUE.format(name=name)
                 raise InvalidParamError(msg)
 
             if name in (
                 API_PAGINATION_PARAM_PAGE,
                 API_PAGINATION_PARAM_PERPAGE,
             ) and not (value.isdecimal() and int(value) >= 1):
-                msg = f"Invalid value for '{name}': must be int > 0"
+                msg = API_PARAM_VALIDATION_ERR_NO_INT.format(name=name)
                 raise InvalidParamError(msg)
 
             if (
                 name == API_PAGINATION_PARAM_PERPAGE
                 and int(value) > API_PAGINATION_MAX_PAGE_SIZE
             ):
-                msg = f"Invalid value for '{name}': must be <= {API_PAGINATION_MAX_PAGE_SIZE}"
+                msg = API_PARAM_VALIDATION_ERR_INT_EXCEED_MAX_PAGE_SIZE.format(
+                    name=name,
+                    page_max=API_PAGINATION_MAX_PAGE_SIZE,
+                )
                 raise InvalidParamError(msg)
 
             if name in API_SEARCH_QUERYABLE_FIELDS and not value.strip():
-                msg = f"Invalid value for '{name}': must not be empty"
+                msg = API_PARAM_VALIDATION_ERR_VALUE_EMPTY.format(name=name)
                 raise InvalidParamError(msg)
 
     @staticmethod
@@ -355,7 +367,10 @@ class MasterblogApi(Masterblog):
 
         # map match_either param "true"/"false" to bool
         match_either = API_SEARCH_PARAM_MATCHEITHER_VALIDS.get(
-            search_args.get(API_SEARCH_PARAM_MATCHEITHER, "false"),
+            search_args.get(
+                API_SEARCH_PARAM_MATCHEITHER,
+                API_SEARCH_PARAM_MATCHEITHER_FALSE,
+            ),
         )
 
         any_or_all = any if match_either else all
@@ -413,11 +428,11 @@ class MasterblogApi(Masterblog):
         start = (page - 1) * per_page
 
         return {
-            "posts": posts[start : start + per_page],
+            API_PAGINATION_RETURN_POSTS: posts[start : start + per_page],
             API_PAGINATION_PARAM_PAGE: page,
             API_PAGINATION_PARAM_PERPAGE: per_page,
-            "total": total,
-            "total_pages": total_pages,
+            API_PAGINATION_RETURN_TOTAL: total,
+            API_PAGINATION_RETURN_TOTAL_PAGES: total_pages,
         }
 
 
